@@ -4,54 +4,22 @@
 ########################################################################
 #  list 1
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from urllib.request import urlretrieve
-from urllib.parse import urlparse
-from zipfile import ZipFile
+import merge_companies
 
-
-########################################################################
-def download_file(url, output_dir, overwrite=False):
-    # URLからファイル名を取得
-    parse_result = urlparse(url)
-    file_name = os.path.basename(parse_result.path)
-    # 出力先ファイルパス
-    destination = os.path.join(output_dir, file_name)
-
-
-    # 無意味なダウンロードを防ぐため、上書き（overwriteの指定か未ダウンロードの場合のみダウンロードを実施する
-    if overwrite or not os.path.exists(destination):
-        # 出力先ディレクトリの作成
-        os.makedirs(output_dir)
-        # ダウンロード
-        urlretrieve(url, destination)
-    return destination
-
-zip_file = download_file('https://archive.ics.uci.edu/ml/machine-learning-databases/00360/AirQualityUCI.zip', './UCI_data/')
-
-
-#######################################################################
-#######################################################################
-#######################################################################
-# list 3
-
-with ZipFile(zip_file) as z:
-  with z.open('AirQualityUCI.xlsx') as f:
-    air_quality = pd.read_excel(
-      f,
-      index_col=0, parse_dates={'DateTime': [0, 1]}, #1
-      na_values=[-200.0],                            #2
-      convert_float=False                            #3
-    )
+ccs = sys.argv
+ccs.pop(0)  # 先頭(script名)を削除
+stock_merged_cc = merge_companies.merge_companies(ccs)
 
 
 #############################################################
 # list 7
 # 不要列の除去
-target_columns = ['T', 'AH', 'PT08.S1(CO)', 'PT08.S2(NMHC)', 'PT08.S3(NOx)', 'PT08.S4(NO2)']
-air_quality = air_quality[target_columns]
+target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close']
+air_quality = stock_merged_cc[target_columns]
 
 #######################################################################################
 # list 8 + list 13
@@ -126,7 +94,7 @@ class TimeSeriesDataSet:
 
 
 dataset = TimeSeriesDataSet(air_quality)
-train_dataset = dataset[dataset.times.year < 2005]
+train_dataset = dataset[dataset.times.year < 2005]  # TODO: datasetにtimesというカラムを作る。
 test_dataset = dataset[dataset.times.year >= 2005]
 
 ########################################################################

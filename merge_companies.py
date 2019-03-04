@@ -8,33 +8,39 @@ import os
 import fnmatch
 import pandas as pd
 
-ccs = sys.argv
-ccs.pop(0) ## 先頭(script名)を削除
 
-dataset = pd.DataFrame()
-for cc in ccs:
-    print(cc)
-    dir = "./stock_cc_year/"
-    filename = 'stocks_%s_1d_*.csv' % (cc)
+def merge_companies(ccs):
 
-    ccdataset = pd.DataFrame()
-    for file in os.listdir(dir):
-        if fnmatch.fnmatch(file, filename):
-            print(file)
-            readdata = pd.read_csv(dir + file, index_col=0)
-            if len(ccdataset) == 0:
-                ccdataset = readdata
-            else:
-                ccdataset = pd.concat([ccdataset, readdata])
+    dataset = pd.DataFrame()
+    for cc in ccs:
+        print(cc)
+        dirname = "./stock_cc_year/"
+        filename = 'stocks_%s_1d_*.csv' % cc
 
-    ccdataset = ccdataset.sort_index()
+        ccdataset = pd.DataFrame()
+        for file in os.listdir(dirname):
+            if fnmatch.fnmatch(file, filename):
+                print(file)
+                readdata = pd.read_csv(dirname + file, index_col=0)
+                if len(ccdataset) == 0:
+                    ccdataset = readdata
+                else:
+                    ccdataset = pd.concat([ccdataset, readdata])
 
-    for i in ccdataset.columns:
-        ccdataset.rename(columns={i: cc + "_" + i}, inplace=True)
+        ccdataset = ccdataset.sort_index()
 
-    if(len(dataset) == 0):
-        dataset = ccdataset
-    else:
-        dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
+        for i in ccdataset.columns:
+            ccdataset.rename(columns={i: cc + "_" + i}, inplace=True)
 
-print(dataset)
+        if(len(dataset) == 0):
+            dataset = ccdataset
+        else:
+            dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
+
+    return dataset
+
+
+if __name__ == "main":
+    ccs = sys.argv
+    ccs.pop(0)  # 先頭(script名)を削除
+    merge_companies(ccs)
