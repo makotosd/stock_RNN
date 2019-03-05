@@ -18,7 +18,7 @@ stock_merged_cc = merge_companies.merge_companies(ccs)
 #############################################################
 # list 7
 # 不要列の除去
-target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close']
+target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
 air_quality = stock_merged_cc[target_columns]
 
 #######################################################################################
@@ -94,8 +94,8 @@ class TimeSeriesDataSet:
 
 
 dataset = TimeSeriesDataSet(air_quality)
-train_dataset = dataset[dataset.times.year < 2005]  # TODO: datasetにtimesというカラムを作る。
-test_dataset = dataset[dataset.times.year >= 2005]
+train_dataset = dataset['2005': '2006']  # 2005年分をトレーニングデータにする。
+
 
 ########################################################################
 # list 10
