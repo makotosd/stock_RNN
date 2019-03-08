@@ -29,7 +29,7 @@ air_quality = stock_merged_cc[target_columns]
 np.random.seed(12345)
 
 dataset = TimeSeriesDataSet.TimeSeriesDataSet(air_quality)
-train_dataset = dataset['2005': '2006']  # 2005年分をトレーニングデータにする。
+train_dataset = dataset['2001': '2007']  # 2001-2007年分をトレーニングデータにする。
 
 
 ########################################################################
