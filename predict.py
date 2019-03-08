@@ -20,7 +20,7 @@ import TimeSeriesDataSet
 
 def rnn_predict(input_dataset, current_time):
     # 標準化
-    previous = TimeSeriesDataSet.TimeSeriesDataSet(input_dataset).tail(SERIES_LENGTH).standardize(mean=train_mean, std=train_std)
+    previous = input_dataset.tail(SERIES_LENGTH).standardize(mean=train_mean, std=train_std)
     # 予測対象の時刻
     predict_time = current_time  # previous.times[-1] + np.timedelta64(1, 'h')  # TODO: 次の行を1時間ごと決め打ちしちゃってる。元データの次の行のindexをもってくる。
 
@@ -29,7 +29,7 @@ def rnn_predict(input_dataset, current_time):
     predict_data = prediction.eval({x: batch_x})
 
     # 結果のデータフレームを作成
-    df_standardized = pd.DataFrame(predict_data, columns=input_dataset.columns, index=[predict_time])
+    df_standardized = pd.DataFrame(predict_data, columns=input_dataset.series_data.columns, index=[predict_time])
     # 標準化の逆操作
     return train_mean + train_std * df_standardized
 
@@ -42,11 +42,7 @@ stock_merged_cc = merge_companies.merge_companies(ccs)
 # list 7
 # 不要列の除去
 target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
-air_quality = stock_merged_cc[target_columns]
-
-
-# hogehoge
-dataset = TimeSeriesDataSet.TimeSeriesDataSet(air_quality)
+dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
 train_dataset = dataset['2001': '2007']  # 2005年分をトレーニングデータにする。
 test_dataset = dataset['2007': ]
 
@@ -93,12 +89,12 @@ if os.name == 'nt':
 else:
     saver.restore(sess, cwd + "/model.ckpt")
 
-predict_air_quality = pd.DataFrame([], columns=air_quality.columns)
+predict_dataset = pd.DataFrame([], columns=dataset.series_data.columns)
 for current_time in test_dataset.times:
-    predict_result = rnn_predict(air_quality[air_quality.index < current_time], current_time)
-    predict_air_quality = predict_air_quality.append(predict_result)
+    predict_result = rnn_predict(dataset[dataset.series_data.index < current_time], current_time)
+    predict_dataset = predict_dataset.append(predict_result)
 
-print(predict_air_quality)
+print(predict_dataset)
 
 
 
