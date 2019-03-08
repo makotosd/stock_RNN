@@ -18,11 +18,11 @@ import TimeSeriesDataSet
 # list 15
 
 
-def rnn_predict(input_dataset):
+def rnn_predict(input_dataset, current_time):
     # 標準化
     previous = TimeSeriesDataSet.TimeSeriesDataSet(input_dataset).tail(SERIES_LENGTH).standardize(mean=train_mean, std=train_std)
     # 予測対象の時刻
-    predict_time = previous.times[-1] + np.timedelta64(1, 'h')  # TODO: 次の行を1時間ごと決め打ちしちゃってる。元データの次の行のindexをもってくる。
+    predict_time = current_time  # previous.times[-1] + np.timedelta64(1, 'h')  # TODO: 次の行を1時間ごと決め打ちしちゃってる。元データの次の行のindexをもってくる。
 
     # 予測
     batch_x = previous.as_array()
@@ -47,8 +47,8 @@ air_quality = stock_merged_cc[target_columns]
 
 # hogehoge
 dataset = TimeSeriesDataSet.TimeSeriesDataSet(air_quality)
-train_dataset = dataset['2005': '2006']  # 2005年分をトレーニングデータにする。
-test_dataset = dataset['2006': ]
+train_dataset = dataset['2001': '2007']  # 2005年分をトレーニングデータにする。
+test_dataset = dataset['2007': ]
 
 # パラメーター
 # 学習時間長
@@ -95,10 +95,7 @@ else:
 
 predict_air_quality = pd.DataFrame([], columns=air_quality.columns)
 for current_time in test_dataset.times:
-    print(current_time)
-    print([air_quality.index])
-    print([air_quality.index < current_time])
-    predict_result = rnn_predict(air_quality[air_quality.index < current_time])
+    predict_result = rnn_predict(air_quality[air_quality.index < current_time], current_time)
     predict_air_quality = predict_air_quality.append(predict_result)
 
 print(predict_air_quality)
