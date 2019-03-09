@@ -40,7 +40,7 @@ def merge_companies(ccs):
     return dataset
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     ccs = sys.argv
     ccs.pop(0)  # 先頭(script名)を削除
     merge_companies(ccs)
