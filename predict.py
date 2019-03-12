@@ -35,7 +35,10 @@ def rnn_predict(input_dataset, current_time, train_mean, train_std, prediction, 
 def predict(stock_merged_cc):
     # list 7
     # 不要列の除去
-    target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
+    # target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
+    target_columns = ['1330_open', '1330_close', '1330_high', '1330_low',
+                      '6701_open', '6701_close', '6701_high', '6701_low',
+                      '6702_open', '6702_close', '6702_high', '6702_low']  # ccがハードに埋まってる。
     dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
     train_dataset = dataset['2001': '2007']  # 2005年分をトレーニングデータにする。
     test_dataset = dataset['2007': ]

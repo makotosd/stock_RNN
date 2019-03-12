@@ -1,8 +1,12 @@
 #!/usr/bin/python
 # -*- coding: Shift_JIS -*-
 
+##
+#  TODO: 二日先、五日先の予想
+#  TODO: 入力パラメータ(会社数)を増やす。
+##
+
 ########################################################################
-#  list 1
 import os
 import sys
 import numpy as np
@@ -18,7 +22,10 @@ stock_merged_cc = merge_companies.merge_companies(ccs)
 #############################################################
 # list 7
 # 不要列の除去
-target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
+#target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
+target_columns = ['1330_open', '1330_close', '1330_high', '1330_low',
+                  '6701_open', '6701_close', '6701_high', '6701_low',
+                  '6702_open', '6702_close', '6702_high', '6702_low']  # ccがハードに埋まってる。
 air_quality = stock_merged_cc[target_columns]
 
 #######################################################################################
