@@ -51,6 +51,10 @@ def predict(stock_merged_cc):
     global FEATURE_COUNT
     FEATURE_COUNT = dataset.feature_count
 
+    # ニューロン数
+    global NUM_OF_NEURON
+    NUM_OF_NEURON = 60
+
     # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
     # 訓練データ
     x = tf.placeholder(tf.float32, [None, SERIES_LENGTH, FEATURE_COUNT])
@@ -64,13 +68,13 @@ def predict(stock_merged_cc):
     #######################################################################
     # list 11
     # RNNセルの作成
-    cell = tf.nn.rnn_cell.BasicRNNCell(20)
+    cell = tf.nn.rnn_cell.BasicRNNCell(NUM_OF_NEURON)
     initial_state = cell.zero_state(tf.shape(x)[0], dtype=tf.float32)
     outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dtype=tf.float32)
 
     # 全結合
     # 重み
-    w = tf.Variable(tf.zeros([20, FEATURE_COUNT]))
+    w = tf.Variable(tf.zeros([NUM_OF_NEURON, FEATURE_COUNT]))
     # バイアス
     b = tf.Variable([0.1] * FEATURE_COUNT)
     # 最終出力（予測）
