@@ -2,6 +2,9 @@
 # -*- coding: Shift_JIS -*-
 
 ##
+#  参考にしたのはここ
+#  <https://deepinsider.jp/tutor/introtensorflow/buildrnn>
+##
 #  TODO: 二日先、五日先の予想
 #  TODO: 入力パラメータ(会社数)を増やす。
 ##
@@ -13,10 +16,19 @@ import numpy as np
 import tensorflow as tf
 import TimeSeriesDataSet
 import merge_companies
+import argparse
 
-ccs = sys.argv
-ccs.pop(0)  # 先頭(script名)を削除
-stock_merged_cc = merge_companies.merge_companies(ccs)
+# arg パーサの生成
+parser = argparse.ArgumentParser(description='予測値と真値の比較、保存、可視化')
+
+# オプション群の設定
+parser.add_argument('--cc', nargs='*', help='company code')
+#parser.add_argument('--output', help='予測値と真値の結果(csv)の出力。可視化は行わない。')
+#parser.add_argument('--input', help='予測値と真値の結果(csv)の入力。予測は行わない。')
+
+args = parser.parse_args()  # 引数の解析を実行
+
+stock_merged_cc = merge_companies.merge_companies(args.cc)
 
 
 #############################################################
@@ -48,6 +60,9 @@ sess = tf.InteractiveSession()
 SERIES_LENGTH = 72
 # 特徴量数
 FEATURE_COUNT = dataset.feature_count
+# ニューロン数
+NUM_OF_NEURON = 60
+
 
 # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
 # 訓練データ
@@ -58,7 +73,7 @@ y = tf.placeholder(tf.float32, [None, FEATURE_COUNT])
 #######################################################################
 # list 11
 # RNNセルの作成
-cell = tf.nn.rnn_cell.BasicRNNCell(20)
+cell = tf.nn.rnn_cell.BasicRNNCell(NUM_OF_NEURON)
 initial_state = cell.zero_state(tf.shape(x)[0], dtype=tf.float32)
 outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dtype=tf.float32)
 
@@ -67,7 +82,7 @@ outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dt
 
 # 全結合
 # 重み
-w = tf.Variable(tf.zeros([20, FEATURE_COUNT]))
+w = tf.Variable(tf.zeros([NUM_OF_NEURON, FEATURE_COUNT]))
 # バイアス
 b = tf.Variable([0.1] * FEATURE_COUNT)
 # 最終出力（予測）
