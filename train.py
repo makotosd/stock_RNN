@@ -57,7 +57,7 @@ SERIES_LENGTH = 72
 # 特徴量数
 FEATURE_COUNT = dataset.feature_count
 # ニューロン数
-NUM_OF_NEURON = 20
+NUM_OF_NEURON = 30
 
 
 # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
@@ -91,7 +91,7 @@ optimizer = tf.train.AdamOptimizer().minimize(loss)
 #######################################################################
 # list 14
 # バッチサイズ
-BATCH_SIZE = 256 # 16
+BATCH_SIZE = 16
 
 # 学習回数
 NUM_TRAIN = 10000  # 10000
