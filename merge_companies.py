@@ -8,6 +8,17 @@ import os
 import fnmatch
 import pandas as pd
 
+## ドルとユーロを読む
+def read_quate():
+    dirname = "./stock_cc_year/"
+    filename = 'quote.csv'
+
+    quote = pd.read_csv(dirname + filename)
+    quote['X'] = pd.to_datetime(quote['date'], format='%Y/%m/%d %H:%M:%S')
+    quote = quote.set_index('X')
+    quote = quote[['USD', 'EUR']]
+
+    return quote
 
 def merge_companies(ccs):
 
@@ -21,10 +32,20 @@ def merge_companies(ccs):
         for file in os.listdir(dirname):
             if fnmatch.fnmatch(file, filename):
                 print(file)
-                readdata = pd.read_csv(dirname + file, index_col=0)
+                # csvのread
+                readdata = pd.read_csv(dirname + file)
+
+                # dateカラムを日付型のindexにする。
+                readdata['X'] = pd.to_datetime(readdata['date'], format='%Y/%m/%d %H:%M:%S')
+                readdata.set_index('X', inplace=True)
+                readdata.drop(columns=['date'], inplace=True)
+
+                # (high - open)^2のカラムの追加
                 h_o = pd.DataFrame()
                 h_o['highopen'] = (readdata['high'] - readdata['open'])**2
                 readdata = pd.concat([readdata, h_o], axis=1)
+
+                # 複数年データの結合
                 if len(ccdataset) == 0:
                     ccdataset = readdata
                 else:
@@ -32,13 +53,19 @@ def merge_companies(ccs):
 
         ccdataset = ccdataset.sort_index()
 
+        # カラム名にCCをつける
         for i in ccdataset.columns:
             ccdataset.rename(columns={i: cc + "_" + i}, inplace=True)
 
+        # 複数企業データの結合
         if(len(dataset) == 0):
             dataset = ccdataset
         else:
             dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
+
+    # ドルとユーロの結合
+    quote = read_quate()
+    dataset = pd.concat([dataset, quote], axis=1, join='inner')
 
     return dataset
 
