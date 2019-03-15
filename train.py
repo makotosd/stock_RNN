@@ -11,48 +11,44 @@
 
 ########################################################################
 import os
-import sys
 import numpy as np
 import tensorflow as tf
 import TimeSeriesDataSet
 import merge_companies
 import argparse
+from datetime import datetime
 
 # arg パーサの生成
 parser = argparse.ArgumentParser(description='予測値と真値の比較、保存、可視化')
 
 # オプション群の設定
 parser.add_argument('--cc', nargs='*', help='company code')
-#parser.add_argument('--output', help='予測値と真値の結果(csv)の出力。可視化は行わない。')
-#parser.add_argument('--input', help='予測値と真値の結果(csv)の入力。予測は行わない。')
+# parser.add_argument('--output', help='予測値と真値の結果(csv)の出力。可視化は行わない。')
+# parser.add_argument('--input', help='予測値と真値の結果(csv)の入力。予測は行わない。')
 
 args = parser.parse_args()  # 引数の解析を実行
 
-stock_merged_cc = merge_companies.merge_companies(args.cc)
 
 
 #############################################################
-# list 7
-# 不要列の除去
-#target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
-target_columns = ['1330_open', '1330_close', '1330_high', '1330_low',
-                  '6701_open', '6701_close', '6701_high', '6701_low',
-                  '6702_open', '6702_close', '6702_high', '6702_low']  # ccがハードに埋まってる。
-air_quality = stock_merged_cc[target_columns]
-
-#######################################################################################
-# list 8 + list 13
-
-
 # 乱数シードの初期化（数値は何でもよい）
 np.random.seed(12345)
 
-dataset = TimeSeriesDataSet.TimeSeriesDataSet(air_quality)
+# 不要列の除去
+# target_columns = ['1330_open', '1330_close', '1330_high', '1330_low', '1330_volume', '1330_highopen',
+#                   '6701_open', '6701_close', '6701_high', '6701_low', '6701_volume', '6701_highopen',
+#                   '6702_open', '6702_close', '6702_high', '6702_low', '6702_volume', '6702_highopen']
+target_columns = []
+for cc in args.cc:
+    for feature in ['open', 'close', 'high', 'low', 'volume', 'highopen']:
+        cc_f = cc + '_' + feature
+        target_columns.append(cc_f)
+stock_merged_cc = merge_companies.merge_companies(args.cc)
+dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
 train_dataset = dataset['2001': '2007']  # 2001-2007年分をトレーニングデータにする。
 
 
 ########################################################################
-# list 10
 sess = tf.InteractiveSession()
 
 # パラメーター
@@ -61,7 +57,7 @@ SERIES_LENGTH = 72
 # 特徴量数
 FEATURE_COUNT = dataset.feature_count
 # ニューロン数
-NUM_OF_NEURON = 60
+NUM_OF_NEURON = 20
 
 
 # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
@@ -95,10 +91,10 @@ optimizer = tf.train.AdamOptimizer().minimize(loss)
 #######################################################################
 # list 14
 # バッチサイズ
-BATCH_SIZE = 16
+BATCH_SIZE = 256 # 16
 
 # 学習回数
-NUM_TRAIN = 10000
+NUM_TRAIN = 10000  # 10000
 
 # 学習中の出力頻度
 OUTPUT_BY = 500
@@ -115,7 +111,8 @@ for i in range(NUM_TRAIN):
     batch = standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE)
     mae, _ = sess.run([loss, optimizer], feed_dict={x: batch[0], y: batch[1]})
     if i % OUTPUT_BY == 0:
-        print('step {:d}, error {:.2f}'.format(i, mae))
+        now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        print('{:s}: step {:d}, error {:.3f}'.format(now, i, mae))
 
 # 保存
 cwd = os.getcwd()

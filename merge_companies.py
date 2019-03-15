@@ -22,6 +22,9 @@ def merge_companies(ccs):
             if fnmatch.fnmatch(file, filename):
                 print(file)
                 readdata = pd.read_csv(dirname + file, index_col=0)
+                h_o = pd.DataFrame()
+                h_o['highopen'] = (readdata['high'] - readdata['open'])**2
+                readdata = pd.concat([readdata, h_o], axis=1)
                 if len(ccdataset) == 0:
                     ccdataset = readdata
                 else:
