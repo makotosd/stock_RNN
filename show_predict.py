@@ -18,6 +18,9 @@ parser = argparse.ArgumentParser(description='予測値と真値の比較、保存、可視化')
 parser.add_argument('--cc', nargs='*', help='company code')
 parser.add_argument('--output', help='予測値と真値の結果(csv)の出力。可視化は行わない。')
 parser.add_argument('--input', help='予測値と真値の結果(csv)の入力。予測は行わない。')
+parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
+                    default=['open', 'close', 'high', 'low', 'highopen'])
+parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
 
 args = parser.parse_args()  # 引数の解析を実行
 
@@ -27,7 +30,7 @@ input_dataset = merge_companies.merge_companies(args.cc)
 
 #  予測を実行
 if args.input is None:  # 読み込みファイルの指定がない　＝　予測の実施
-    predict_dataset = predict.predict(input_dataset)
+    predict_dataset = predict.predict(input_dataset, args.cc, args.feature, args.quote)
 
     if args.output is not None:  # 書き込みファイルの指定がある ＝ ファイルを書く
         predict_dataset.to_csv(str(args.output))
@@ -37,7 +40,7 @@ else:
 
 
 # 正解データと予測データ
-correct_data = input_dataset[input_dataset.index >= '2007']
+correct_data = input_dataset[input_dataset.index >= '2001']
 predict_data = predict_dataset
 
 cf.go_offline()  # plotlyをオフラインで実行。

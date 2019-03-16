@@ -25,10 +25,15 @@ parser = argparse.ArgumentParser(description='予測値と真値の比較、保存、可視化')
 parser.add_argument('--cc', nargs='*', help='company code')
 # parser.add_argument('--output', help='予測値と真値の結果(csv)の出力。可視化は行わない。')
 # parser.add_argument('--input', help='予測値と真値の結果(csv)の入力。予測は行わない。')
+parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
+                    default=['open', 'close', 'high', 'low', 'highopen'])
+parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
 
 args = parser.parse_args()  # 引数の解析を実行
 
-
+print('cc: '      + ",".join(args.cc))
+print('feature: ' + ",".join(args.feature))
+print('quote: '   + ",".join(args.quote))
 
 #############################################################
 # 乱数シードの初期化（数値は何でもよい）
@@ -38,15 +43,14 @@ np.random.seed(12345)
 # target_columns = ['1330_open', '1330_close', '1330_high', '1330_low', '1330_volume', '1330_highopen',
 #                   '6701_open', '6701_close', '6701_high', '6701_low', '6701_volume', '6701_highopen',
 #                   '6702_open', '6702_close', '6702_high', '6702_low', '6702_volume', '6702_highopen']
-target_columns = []
+target_columns = args.quote
 for cc in args.cc:
-    for feature in ['open', 'close', 'high', 'low', 'volume', 'highopen']:
+    for feature in args.feature:
         cc_f = cc + '_' + feature
         target_columns.append(cc_f)
 stock_merged_cc = merge_companies.merge_companies(args.cc)
 dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
-train_dataset = dataset['2001': '2007']  # 2001-2007年分をトレーニングデータにする。
-
+train_dataset = dataset['2001': '2016']
 
 ########################################################################
 sess = tf.InteractiveSession()
@@ -91,7 +95,7 @@ optimizer = tf.train.AdamOptimizer().minimize(loss)
 #######################################################################
 # list 14
 # バッチサイズ
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 
 # 学習回数
 NUM_TRAIN = 10000  # 10000

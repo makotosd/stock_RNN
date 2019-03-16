@@ -20,11 +20,22 @@ def read_quate():
 
     return quote
 
+# 個社特殊事情への対応
+def refine_by_company(dataset, cc):
+    ret = dataset
+    if cc =='6701':   ## NECは2017-09-27に株価が統合(10倍)された。
+        retA = dataset[dataset.index < '2017-09-27'] * 10  # '2017-09-27'以前は、価格を10倍
+        retA['volume'] = dataset['volume']                 # でも、volumeは元のまま
+        retB = dataset[dataset.index >= '2017-09-27']
+        ret = pd.concat([retA, retB])
+
+    return ret
+
 def merge_companies(ccs):
 
     dataset = pd.DataFrame()
     for cc in ccs:
-        print(cc)
+        # print(cc)
         dirname = "./stock_cc_year/"
         filename = 'stocks_%s_1d_*.csv' % cc
 
@@ -40,9 +51,12 @@ def merge_companies(ccs):
                 readdata.set_index('X', inplace=True)
                 readdata.drop(columns=['date'], inplace=True)
 
+                # 個社特別対応
+                readdata = refine_by_company(readdata, cc)
+
                 # (high - open)^2のカラムの追加
                 h_o = pd.DataFrame()
-                h_o['highopen'] = (readdata['high'] - readdata['open'])**2
+                h_o['highopen'] = (readdata['high'] - readdata['open'])**1
                 readdata = pd.concat([readdata, h_o], axis=1)
 
                 # 複数年データの結合

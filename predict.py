@@ -10,7 +10,6 @@ import os
 import sys
 import tensorflow as tf
 import pandas as pd
-import numpy as np
 import merge_companies
 import TimeSeriesDataSet
 
@@ -32,16 +31,18 @@ def rnn_predict(input_dataset, current_time, train_mean, train_std, prediction, 
 
 
 #############################################################
-def predict(stock_merged_cc):
+def predict(stock_merged_cc, company_codes, features, quote):
     # list 7
     # 不要列の除去
     # target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
-    target_columns = ['1330_open', '1330_close', '1330_high', '1330_low',
-                      '6701_open', '6701_close', '6701_high', '6701_low',
-                      '6702_open', '6702_close', '6702_high', '6702_low']  # ccがハードに埋まってる。
+    target_columns = quote
+    for cc in company_codes:
+        for feature in features:
+            cc_f = cc + '_' + feature
+            target_columns.append(cc_f)
     dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
-    train_dataset = dataset['2001': '2007']  # 2005年分をトレーニングデータにする。
-    test_dataset = dataset['2007': ]
+    train_dataset = dataset['2001': '2016']  # 2005年分をトレーニングデータにする。
+    test_dataset = dataset['2016': ]
 
     # パラメーター
     # 学習時間長
@@ -53,7 +54,7 @@ def predict(stock_merged_cc):
 
     # ニューロン数
     global NUM_OF_NEURON
-    NUM_OF_NEURON = 60
+    NUM_OF_NEURON = 30
 
     # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
     # 訓練データ
