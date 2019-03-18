@@ -25,13 +25,13 @@ def rnn_predict(input_dataset, current_time, train_mean, train_std, prediction, 
     predict_data = prediction.eval({x: batch_x})
 
     # 結果のデータフレームを作成
-    df_standardized = pd.DataFrame(predict_data, columns=['6702_close'], index=[predict_time])
+    df_standardized = pd.DataFrame(predict_data, columns=TARGET_FEATURE, index=[predict_time])
     # 標準化の逆操作
-    return train_mean['6702_close'] + train_std['6702_close'] * df_standardized
+    return train_mean[TARGET_FEATURE] + train_std[TARGET_FEATURE] * df_standardized
 
 
 #############################################################
-def predict(stock_merged_cc, company_codes, features, quote):
+def predict(stock_merged_cc, company_codes, features, quote, target_feature):
     # list 7
     # 不要列の除去
     # target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
@@ -56,11 +56,17 @@ def predict(stock_merged_cc, company_codes, features, quote):
     global NUM_OF_NEURON
     NUM_OF_NEURON = 30
 
+    # 最適化対象
+    global TARGET_FEATURE
+    global TARGET_FEATURE_COUNT
+    TARGET_FEATURE = target_feature
+    TARGET_FEATURE_COUNT = len(TARGET_FEATURE)
+
     # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
     # 訓練データ
     x = tf.placeholder(tf.float32, [None, SERIES_LENGTH, FEATURE_COUNT])
     # 教師データ
-    y = tf.placeholder(tf.float32, [None, 1])
+    y = tf.placeholder(tf.float32, [None, TARGET_FEATURE_COUNT])
 
     # 標準化
     train_mean = train_dataset.mean()
@@ -75,9 +81,9 @@ def predict(stock_merged_cc, company_codes, features, quote):
 
     # 全結合
     # 重み
-    w = tf.Variable(tf.zeros([NUM_OF_NEURON, 1]))
+    w = tf.Variable(tf.zeros([NUM_OF_NEURON, TARGET_FEATURE_COUNT]))
     # バイアス
-    b = tf.Variable([0.1] * 1)
+    b = tf.Variable([0.1] * TARGET_FEATURE_COUNT)
     # 最終出力（予測）
     prediction = tf.matmul(last_state, w) + b
 
@@ -93,7 +99,7 @@ def predict(stock_merged_cc, company_codes, features, quote):
     else:
         saver.restore(sess, cwd + "/model.ckpt")
 
-    predict_dataset = pd.DataFrame([], columns=['6702_close'])
+    predict_dataset = pd.DataFrame([], columns=TARGET_FEATURE)
     for current_time in test_dataset.times:
         predict_result = rnn_predict(dataset[dataset.series_data.index < current_time],
                                      current_time,

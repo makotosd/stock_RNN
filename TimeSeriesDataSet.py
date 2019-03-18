@@ -22,7 +22,7 @@ class TimeSeriesDataSet:
     def times(self):
         return self.series_data.index
 
-    def next_batch(self, length, batch_size):
+    def next_batch(self, length, batch_size, target_feature):
         """
         連続したlength時間のデータおよび1時間の誤差測定用データを取得する。
         最後の1時間は最終出力データ。
@@ -30,16 +30,17 @@ class TimeSeriesDataSet:
         max_start_index = len(self) - length
         design_matrix = []
         expectation = []
+        target_feature_count = len(target_feature)
         while len(design_matrix) < batch_size:
             start_index = np.random.choice(max_start_index)
             end_index = start_index + length + 1
             values = self.series_data[start_index:end_index]
             if (values.count() == length + 1).all():  # 切り出したデータ中に欠損値がない
                 train_data = values[:-1]
-                true_value = values[-1:]['6702_close']
+                true_value = values[-1:][target_feature]
                 design_matrix.append(train_data.as_matrix())
                 # expectation.append(np.reshape(true_value.as_matrix(), [self.feature_count]))
-                expectation.append(np.reshape(true_value.as_matrix(), [1]))
+                expectation.append(np.reshape(true_value.as_matrix(), [target_feature_count]))
 
         return np.stack(design_matrix), np.stack(expectation)
 

@@ -28,6 +28,7 @@ parser.add_argument('--cc', nargs='*', help='company code')
 parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
                     default=['open', 'close', 'high', 'low', 'highopen'])
 parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
+parser.add_argument('--target_feature', nargs='*', help='[6702_close, 6702_low], default=[]')
 
 args = parser.parse_args()  # 引数の解析を実行
 
@@ -62,13 +63,16 @@ SERIES_LENGTH = 72
 FEATURE_COUNT = dataset.feature_count
 # ニューロン数
 NUM_OF_NEURON = 30
+# 最適化対象パラメータ
+TARGET_FEATURE = args.target_feature
+TARGET_FEATURE_COUNT = len(args.target_feature)
 
 
 # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
 # 訓練データ
 x = tf.placeholder(tf.float32, [None, SERIES_LENGTH, FEATURE_COUNT])
 # 教師データ
-y = tf.placeholder(tf.float32, [None, 1])
+y = tf.placeholder(tf.float32, [None, TARGET_FEATURE_COUNT])
 
 #######################################################################
 # list 11
@@ -82,9 +86,9 @@ outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dt
 
 # 全結合
 # 重み
-w = tf.Variable(tf.zeros([NUM_OF_NEURON, 1]))
+w = tf.Variable(tf.zeros([NUM_OF_NEURON, TARGET_FEATURE_COUNT]))
 # バイアス
-b = tf.Variable([0.1] * 1)
+b = tf.Variable([0.1] * TARGET_FEATURE_COUNT)
 # 最終出力（予測）
 prediction = tf.matmul(last_state, w) + b
 
@@ -98,7 +102,7 @@ optimizer = tf.train.AdamOptimizer().minimize(loss)
 BATCH_SIZE = 64
 
 # 学習回数
-NUM_TRAIN = 10000  # 10000
+NUM_TRAIN = 10000
 
 # 学習中の出力頻度
 OUTPUT_BY = 500
@@ -112,7 +116,7 @@ standardized_train_dataset = train_dataset.standardize()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver()
 for i in range(NUM_TRAIN):
-    batch = standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE)
+    batch = standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE, TARGET_FEATURE)
     mae, _ = sess.run([loss, optimizer], feed_dict={x: batch[0], y: batch[1]})
     if i % OUTPUT_BY == 0:
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
