@@ -36,9 +36,10 @@ class TimeSeriesDataSet:
             values = self.series_data[start_index:end_index]
             if (values.count() == length + 1).all():  # 切り出したデータ中に欠損値がない
                 train_data = values[:-1]
-                true_value = values[-1:]
+                true_value = values[-1:]['6702_close']
                 design_matrix.append(train_data.as_matrix())
-                expectation.append(np.reshape(true_value.as_matrix(), [self.feature_count]))
+                # expectation.append(np.reshape(true_value.as_matrix(), [self.feature_count]))
+                expectation.append(np.reshape(true_value.as_matrix(), [1]))
 
         return np.stack(design_matrix), np.stack(expectation)
 

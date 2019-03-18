@@ -68,7 +68,7 @@ NUM_OF_NEURON = 30
 # 訓練データ
 x = tf.placeholder(tf.float32, [None, SERIES_LENGTH, FEATURE_COUNT])
 # 教師データ
-y = tf.placeholder(tf.float32, [None, FEATURE_COUNT])
+y = tf.placeholder(tf.float32, [None, 1])
 
 #######################################################################
 # list 11
@@ -82,9 +82,9 @@ outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dt
 
 # 全結合
 # 重み
-w = tf.Variable(tf.zeros([NUM_OF_NEURON, FEATURE_COUNT]))
+w = tf.Variable(tf.zeros([NUM_OF_NEURON, 1]))
 # バイアス
-b = tf.Variable([0.1] * FEATURE_COUNT)
+b = tf.Variable([0.1] * 1)
 # 最終出力（予測）
 prediction = tf.matmul(last_state, w) + b
 
