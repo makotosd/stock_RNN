@@ -3,7 +3,8 @@
 
 ##
 #  参考にしたのはここ
-#  <https://deepinsider.jp/tutor/introtensorflow/buildrnn>
+#  RNN: <https://deepinsider.jp/tutor/introtensorflow/buildrnn>
+#  LSTM <https://www.slideshare.net/aitc_jp/20180127-tensorflowrnnlstm>
 ##
 #  TODO: 二日先、五日先の予想
 #  TODO: 入力パラメータ(会社数)を増やす。
@@ -29,12 +30,14 @@ parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volum
                     default=['open', 'close', 'high', 'low', 'highopen'])
 parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
 parser.add_argument('--target_feature', nargs='*', help='[6702_close, 6702_low], default=[]')
+parser.add_argument('--rnn', nargs=1, help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
 
 args = parser.parse_args()  # 引数の解析を実行
 
 print('cc: '      + ",".join(args.cc))
 print('feature: ' + ",".join(args.feature))
 print('quote: '   + ",".join(args.quote))
+print('rnn: '     + str(args.rnn))
 
 #############################################################
 # 乱数シードの初期化（数値は何でもよい）
@@ -66,7 +69,8 @@ NUM_OF_NEURON = 30
 # 最適化対象パラメータ
 TARGET_FEATURE = args.target_feature
 TARGET_FEATURE_COUNT = len(args.target_feature)
-
+# BasicRNNCell or BasicLSTMCell
+RNN = args.rnn[0]
 
 # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
 # 訓練データ
@@ -77,9 +81,19 @@ y = tf.placeholder(tf.float32, [None, TARGET_FEATURE_COUNT])
 #######################################################################
 # list 11
 # RNNセルの作成
-cell = tf.nn.rnn_cell.BasicRNNCell(NUM_OF_NEURON)
-initial_state = cell.zero_state(tf.shape(x)[0], dtype=tf.float32)
-outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dtype=tf.float32)
+if RNN == 'BasicRNNCell':
+    print('BasicRNNCell')
+    cell = tf.nn.rnn_cell.BasicRNNCell(NUM_OF_NEURON)
+    initial_state = cell.zero_state(tf.shape(x)[0], dtype=tf.float32)
+    outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dtype=tf.float32)
+elif RNN == 'BasicLSTMCell':
+    print('BasicLSTMCell')
+    cell = tf.nn.rnn_cell.BasicLSTMCell(NUM_OF_NEURON)
+    initial_state = cell.zero_state(tf.shape(x)[0], dtype=tf.float32)
+    outputs, last_state = tf.nn.dynamic_rnn(cell, x, initial_state=initial_state, dtype=tf.float32)
+else:
+    print('No RNN Cell Defined')
+    exit(0)
 
 #######################################################################
 # list 12
@@ -90,7 +104,11 @@ w = tf.Variable(tf.zeros([NUM_OF_NEURON, TARGET_FEATURE_COUNT]))
 # バイアス
 b = tf.Variable([0.1] * TARGET_FEATURE_COUNT)
 # 最終出力（予測）
-prediction = tf.matmul(last_state, w) + b
+if RNN == 'BasicRNNCell':
+    # prediction = tf.matmul(last_state, w) + b
+    prediction = tf.matmul(last_state, w) + b
+elif RNN == 'BasicLSTMCell':
+    prediction = tf.matmul(last_state[-1], w) + b
 
 # 損失関数（平均絶対誤差：MAE）と最適化（Adam）
 loss = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
