@@ -105,10 +105,11 @@ w = tf.Variable(tf.zeros([NUM_OF_NEURON, TARGET_FEATURE_COUNT]))
 b = tf.Variable([0.1] * TARGET_FEATURE_COUNT)
 # 最終出力（予測）
 if RNN == 'BasicRNNCell':
-    # prediction = tf.matmul(last_state, w) + b
     prediction = tf.matmul(last_state, w) + b
 elif RNN == 'BasicLSTMCell':
-    prediction = tf.matmul(last_state[-1], w) + b
+    prediction = tf.matmul(last_state[1], w) + b
+    # cell output equals to the hidden state. In case of LSTM, it's the short-term part of the tuple (second element of LSTMStateTuple).
+    # <https://stats.stackexchange.com/questions/330176/what-is-the-output-of-a-tf-nn-dynamic-rnn> より
 
 # 損失関数（平均絶対誤差：MAE）と最適化（Adam）
 loss = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
