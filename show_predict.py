@@ -4,13 +4,11 @@
 #######################################################################
 #  jupyter notebook上で動かす。真の値と、予測値をグラフ化します。
 #######################################################################
-# インポート＆実行済みの場合、以下の3行はなくてもよい
 import os
 import pandas as pd
 import cufflinks as cf
 import argparse
 import tensorflow as tf
-# import predict
 import merge_companies
 import TimeSeriesDataSet
 
@@ -33,9 +31,7 @@ def rnn_predict(input_dataset, current_time, train_mean, train_std, prediction, 
 
 #############################################################
 def predict(stock_merged_cc, company_codes, features, quote, target_feature):
-    # list 7
     # 不要列の除去
-    # target_columns = ['1330_open', '1330_close', '6701_open', '6701_close', '6702_open', '6702_close'] # ccがハードに埋まってる。
     target_columns = quote
     for cc in company_codes:
         for feature in features:
@@ -52,11 +48,9 @@ def predict(stock_merged_cc, company_codes, features, quote, target_feature):
     # 特徴量数
     global FEATURE_COUNT
     FEATURE_COUNT = dataset.feature_count
-
     # ニューロン数
     global NUM_OF_NEURON
     NUM_OF_NEURON = 30
-
     # 最適化対象
     global TARGET_FEATURE
     global TARGET_FEATURE_COUNT
@@ -74,7 +68,6 @@ def predict(stock_merged_cc, company_codes, features, quote, target_feature):
     train_std = train_dataset.std()
 
     #######################################################################
-    # list 11
     # RNNセルの作成
     print(RNN)
     if RNN == 'BasicRNNCell':
@@ -149,7 +142,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()  # 引数の解析を実行
 
-    #
+    # グローバル変数
     RNN = args.rnn[0]
 
     # 真値の読み込み
@@ -164,7 +157,6 @@ if __name__ == "__main__":
 
     else:
         predict_dataset = pd.read_csv(args.input, index_col=0)
-
 
     # 正解データと予測データ
     correct_data = input_dataset[input_dataset.index >= '2001']
