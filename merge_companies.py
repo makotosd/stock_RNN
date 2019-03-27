@@ -7,6 +7,7 @@ import sys
 import os
 import fnmatch
 import pandas as pd
+import datetime as dt
 
 ## ドルとユーロを読む
 def read_quate():
@@ -19,6 +20,39 @@ def read_quate():
     quote = quote[['USD', 'EUR']]
 
     return quote
+
+## 長期金利を読む
+def read_kinri():
+    dirname = "./stock_cc_year/"
+    filename = 'jgbcm_all_seireki.csv'
+
+    quote = pd.read_csv(dirname + filename)
+    quote['X'] = pd.to_datetime(quote['Date'], format='%Y/%m/%d %H:%M:%S')
+    quote = quote.set_index('X')
+    quote = quote[['1y', '5y', '9y']]
+
+    return quote
+
+# NYダウ
+def read_dji(dates):
+    dirname = "./stock_cc_year/"
+    filename = 'DJI.csv'
+
+    dji = pd.read_csv(dirname + filename)
+    dji= dji.set_index(pd.to_datetime(dji['Date'], format='%Y/%m/%d %H:%M:%S'))
+    dji = dji.drop('Date', axis=1).drop('Adj Close', axis=1)
+
+    ret = pd.DataFrame()
+    for date_j in dates:
+        date_ny = date_j - dt.timedelta(days=1)  # 時差があるので、一日前のデータになる。
+        a = dji[dji.index < date_ny].tail(1)     # 一日前以前で一番新しいデータの
+        a.index = [date_j]                       # 日付を日本時間にする。
+        ret = ret.append(a)
+
+    for colname in ret.columns:
+        ret.rename(columns={colname: "dji_" + colname}, inplace=True)
+
+    return ret
 
 # 個社特殊事情への対応
 def refine_by_company(dataset, cc):
@@ -55,9 +89,9 @@ def merge_companies(ccs):
                 readdata = refine_by_company(readdata, cc)
 
                 # (high - open)^2のカラムの追加
-                h_o = pd.DataFrame()
-                h_o['highopen'] = (readdata['high'] - readdata['open'])**1
-                readdata = pd.concat([readdata, h_o], axis=1)
+                # h_o = pd.DataFrame()
+                # h_o['highopen'] = (readdata['high'] - readdata['open'])**1
+                # readdata = pd.concat([readdata, h_o], axis=1)
 
                 # 複数年データの結合
                 if len(ccdataset) == 0:
@@ -80,6 +114,14 @@ def merge_companies(ccs):
     # ドルとユーロの結合
     quote = read_quate()
     dataset = pd.concat([dataset, quote], axis=1, join='inner')
+
+    # 長期金利の結合
+    kinri = read_kinri()
+    dataset = pd.concat([dataset, kinri], axis=1, join='inner')
+
+    # NYダウ
+    dji = read_dji(dataset.index)
+    dataset = pd.concat([dataset, dji], axis=1, join='inner')
 
     return dataset
 

@@ -21,17 +21,17 @@ parser = argparse.ArgumentParser(description='予測値と真値の比較、保存、可視化')
 
 # オプション群の設定
 parser.add_argument('--cc', nargs='*', help='company code')
-parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
-                    default=['open', 'close', 'high', 'low', 'highopen'])
-parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
+# parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
+#                    default=['open', 'close', 'high', 'low', 'highopen'])
+# parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
 parser.add_argument('--target_feature', nargs='*', help='[6702_close, 6702_low], default=[]')
 parser.add_argument('--rnn', nargs=1, help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
 
 args = parser.parse_args()  # 引数の解析を実行
 
 print('cc: '      + ",".join(args.cc))
-print('feature: ' + ",".join(args.feature))
-print('quote: '   + ",".join(args.quote))
+# print('feature: ' + ",".join(args.feature))
+# print('quote: '   + ",".join(args.quote))
 print('rnn: '     + str(args.rnn))
 
 #############################################################
@@ -39,13 +39,14 @@ print('rnn: '     + str(args.rnn))
 np.random.seed(12345)
 
 # 不要列の除去
-target_columns = args.quote
-for cc in args.cc:
-    for feature in args.feature:
-        cc_f = cc + '_' + feature
-        target_columns.append(cc_f)
+#target_columns = args.quote
+#for cc in args.cc:
+#    for feature in args.feature:
+#        cc_f = cc + '_' + feature
+#        target_columns.append(cc_f)
 stock_merged_cc = merge_companies.merge_companies(args.cc)
-dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
+#dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
+dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc)
 train_dataset = dataset['2001': '2016']
 
 ########################################################################
