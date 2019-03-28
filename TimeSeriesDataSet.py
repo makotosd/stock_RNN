@@ -44,6 +44,24 @@ class TimeSeriesDataSet:
 
         return np.stack(design_matrix), np.stack(expectation)
 
+    def test_batch(self, length, target_feature):
+        """
+        連続したlength時間のデータおよび1時間の誤差測定用データを取得する。
+        最後の1時間は最終出力データ。
+        """
+        xs = []
+        ys = []
+        for current_time in self.times:
+            older_data = self[self.series_data.index < current_time]
+            if len(older_data) > length:
+                x = older_data.tail(length)
+                y = self.series_data.loc[current_time:current_time, target_feature]
+
+                xs.append(x.series_data.as_matrix())
+                ys.append(np.reshape(y.as_matrix(), [len(target_feature)]))
+
+        return np.stack(xs), np.stack(ys)
+
     def append(self, data_point):
         dataframe = pd.DataFrame(data_point, columns=self.series_data.columns)
         self.series_data = self.series_data.append(dataframe)

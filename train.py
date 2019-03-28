@@ -48,6 +48,7 @@ stock_merged_cc = merge_companies.merge_companies(args.cc)
 #dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
 dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc)
 train_dataset = dataset['2001': '2016']
+test_dataset = dataset['2017': ]
 
 ########################################################################
 sess = tf.InteractiveSession()
@@ -114,6 +115,8 @@ with tf.name_scope('optimization'):   # tensorboard用
     # 損失関数（平均絶対誤差：MAE）と最適化（Adam）
     loss = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
     optimizer = tf.train.AdamOptimizer().minimize(loss)
+    # accuracy = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
+    accuracy = tf.reduce_mean(tf.map_fn(tf.abs, prediction / y))
 
 #######################################################################
 # list 14
@@ -130,24 +133,32 @@ OUTPUT_BY = 500
 train_mean = train_dataset.mean()
 train_std = train_dataset.std()
 standardized_train_dataset = train_dataset.standardize()
+standardized_test_dataset = test_dataset.standardize(mean=train_mean, std=train_std)
 
 # 損失関数の出力をトレース対象とする
 tf.summary.scalar('MAE', loss)
+tf.summary.scalar('ACC', accuracy)
 tf.summary.histogram('weight', w)
 tf.summary.histogram('bias', b)
 merged_log = tf.summary.merge_all()
 
 # logsディレクトリに出力するライターを作成して利用
+print('session initialize')
 with tf.summary.FileWriter('logs', sess.graph) as writer:
     # 学習の実行
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
+
+    test_batch = standardized_test_dataset.test_batch(SERIES_LENGTH, TARGET_FEATURE)
     for i in range(NUM_TRAIN):
         batch = standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE, TARGET_FEATURE)
-        summary, mae, _ = sess.run([merged_log, loss, optimizer], feed_dict={x: batch[0], y: batch[1]})
+        summary, _ = sess.run([merged_log, optimizer], feed_dict={x: batch[0], y: batch[1]})
         if i % OUTPUT_BY == 0:
+            mae = sess.run(loss, feed_dict={x: batch[0], y: batch[1]})
+            acc = sess.run(accuracy, feed_dict={x: test_batch[0], y: test_batch[1]})
+
             now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-            print('{:s}: step {:d}, error {:.3f}'.format(now, i, mae))
+            print('{:s}: step {:5d}, err {:.3f}, acc {:.3f}'.format(now, i, mae, acc))
             # ログの出力
             writer.add_summary(summary, global_step=i)
             # ログの出力
