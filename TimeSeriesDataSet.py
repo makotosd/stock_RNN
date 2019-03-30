@@ -30,7 +30,7 @@ class TimeSeriesDataSet:
         max_start_index = len(self) - length
         design_matrix = []
         expectation = []
-        target_feature_count = len(target_feature)
+        target_feature_count = 1 # len(target_feature)
         while len(design_matrix) < batch_size:
             start_index = np.random.choice(max_start_index)
             end_index = start_index + length + 1
@@ -38,6 +38,7 @@ class TimeSeriesDataSet:
             if (values.count() == length + 1).all():  # 切り出したデータ中に欠損値がない
                 train_data = values[:-1]
                 true_value = values[-1:][target_feature]
+
                 design_matrix.append(train_data.as_matrix())
                 # expectation.append(np.reshape(true_value.as_matrix(), [self.feature_count]))
                 expectation.append(np.reshape(true_value.as_matrix(), [target_feature_count]))
@@ -57,8 +58,9 @@ class TimeSeriesDataSet:
                 x = older_data.tail(length)
                 y = self.series_data.loc[current_time:current_time, target_feature]
 
+                target_feature_count = 1
                 xs.append(x.series_data.as_matrix())
-                ys.append(np.reshape(y.as_matrix(), [len(target_feature)]))
+                ys.append(np.reshape(y.as_matrix(), [target_feature_count]))
 
         return np.stack(xs), np.stack(ys)
 
