@@ -87,4 +87,10 @@ class TimeSeriesDataSet:
             std = self.std()
         return TimeSeriesDataSet((self.series_data - mean) / std)
 
+    def divide_dataset(self, rate=0.9, series_length=0):
+        train_data_length = int(self.series_length * rate)
 
+        train_data = self[: train_data_length]
+        test_data = self[train_data_length - series_length :]
+
+        return train_data, test_data

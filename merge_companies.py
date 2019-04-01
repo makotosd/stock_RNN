@@ -76,7 +76,7 @@ def merge_companies(ccs):
         ccdataset = pd.DataFrame()
         for file in os.listdir(dirname):
             if fnmatch.fnmatch(file, filename):
-                print(file)
+                # print(file)
                 # csvのread
                 readdata = pd.read_csv(dirname + file)
 

@@ -35,20 +35,36 @@ print('cc: '      + ",".join(args.cc))
 print('rnn: '     + str(args.rnn))
 
 #############################################################
+# 入力データのうちトレーニングに使うデータの割合。残りは評価用。
+TRAIN_DATA_LENGTH_RATE = 0.9
+# 学習時間長
+SERIES_LENGTH = 72
+#############################################################
 # 乱数シードの初期化（数値は何でもよい）
 np.random.seed(12345)
 
 # 不要列の除去
-#target_columns = args.quote
-#for cc in args.cc:
-#    for feature in args.feature:
-#        cc_f = cc + '_' + feature
-#        target_columns.append(cc_f)
 stock_merged_cc = merge_companies.merge_companies(args.cc)
-#dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc[target_columns])
 dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc)
-train_dataset = dataset['2001': '2016']
-test_dataset = dataset['2017': ]
+train_dataset, test_dataset = dataset.divide_dataset(rate=TRAIN_DATA_LENGTH_RATE, series_length=SERIES_LENGTH)
+print('train data {} to {}, {} data' .format(train_dataset.series_data.index[0],
+                                             train_dataset.series_data.index[-1],
+                                             train_dataset.series_length))
+print('test data {} to {}, {} data' .format(test_dataset.series_data.index[0],
+                                            test_dataset.series_data.index[-1],
+                                            test_dataset.series_length))
+
+#############################################################
+# パラメーター
+# 特徴量数
+FEATURE_COUNT = dataset.feature_count
+# ニューロン数
+NUM_OF_NEURON = 60
+# 最適化対象パラメータ
+TARGET_FEATURE = args.target_feature
+TARGET_FEATURE_COUNT = 1
+# BasicRNNCell or BasicLSTMCell
+RNN = args.rnn  # rnn[0]
 
 if 1:
     # 標準化
@@ -57,21 +73,6 @@ if 1:
     standardized_train_dataset = train_dataset.standardize()
     standardized_test_dataset = test_dataset.standardize(mean=train_mean, std=train_std)
 
-########################################################################
-sess = tf.InteractiveSession()
-
-# パラメーター
-# 学習時間長
-SERIES_LENGTH = 72
-# 特徴量数
-FEATURE_COUNT = dataset.feature_count
-# ニューロン数
-NUM_OF_NEURON = 30
-# 最適化対象パラメータ
-TARGET_FEATURE = args.target_feature
-TARGET_FEATURE_COUNT = 1
-# BasicRNNCell or BasicLSTMCell
-RNN = args.rnn  # rnn[0]
 
 with tf.name_scope('input'):   # tensorboard用
     # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
@@ -81,7 +82,6 @@ with tf.name_scope('input'):   # tensorboard用
     y = tf.placeholder(tf.float32, [None, TARGET_FEATURE_COUNT])
 
 #######################################################################
-# list 11
 with tf.name_scope('RNN'):   # tensorboard用
     # RNNセルの作成
     if RNN == 'BasicRNNCell':
@@ -99,8 +99,6 @@ with tf.name_scope('RNN'):   # tensorboard用
         exit(0)
 
 #######################################################################
-# list 12
-
 # 全結合
 with tf.name_scope('prediction'):   # tensorboard用
     # 重み
@@ -120,64 +118,70 @@ with tf.name_scope('prediction'):   # tensorboard用
 
 with tf.name_scope('optimization'):   # tensorboard用
     # 損失関数（平均絶対誤差：MAE）と最適化（Adam）
-    loss = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
+    loss = tf.reduce_mean(tf.square(y - prediction))
     optimizer = tf.train.AdamOptimizer().minimize(loss)
-    # accuracy = tf.reduce_mean(tf.map_fn(tf.abs, y - prediction))
-    # accuracy = tf.reduce_mean(tf.map_fn(tf.abs, prediction / y))
+
+    # 精度評価: 誤差(%)の平均
     train_mean_t = train_mean[TARGET_FEATURE]
     train_std_t = train_std[TARGET_FEATURE]
-    accuracy = tf.reduce_mean(tf.div(prediction*train_std_t+train_mean_t, y*train_std_t+train_mean_t))
-    accuracy2 = tf.reduce_mean(tf.div(prediction, y))
+    accuracy = tf.reduce_mean(tf.divide(prediction*train_std_t+train_mean_t, y*train_std_t+train_mean_t))
+
+    # 精度評価: 誤差のばらつき(%)
+    diff_mean, diff_var = tf.nn.moments(y - prediction, axes=[0])
+    acc_stddev = tf.reduce_mean(tf.math.sqrt(diff_var) * train_std_t / train_mean_t)
 
 #######################################################################
-# list 14
 # バッチサイズ
-BATCH_SIZE = 64
+BATCH_SIZE = 16    # 64
 
 # 学習回数
-NUM_TRAIN = 10000
+NUM_TRAIN = 1000   # 10000
 
 # 学習中の出力頻度
-OUTPUT_BY = 500
-
-if 0:
-    # 標準化
-    train_mean = train_dataset.mean()
-    train_std = train_dataset.std()
-    standardized_train_dataset = train_dataset.standardize()
-    standardized_test_dataset = test_dataset.standardize(mean=train_mean, std=train_std)
+OUTPUT_BY = 50     # 500
 
 # 損失関数の出力をトレース対象とする
 tf.summary.scalar('MAE', loss)
 tf.summary.scalar('ACC', accuracy)
+tf.summary.scalar('STD', acc_stddev)
 tf.summary.histogram('weight', w)
 tf.summary.histogram('bias', b)
 merged_log = tf.summary.merge_all()
 
+########################################################################
 # logsディレクトリに出力するライターを作成して利用
+sess = tf.InteractiveSession()
 print('session initialize')
 with tf.summary.FileWriter('logs', sess.graph) as writer:
     # 学習の実行
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
 
+    # test用データセットのバッチ実行用データの作成
     test_batch = standardized_test_dataset.test_batch(SERIES_LENGTH, TARGET_FEATURE)
+
+    # バッチ学習
     for i in range(NUM_TRAIN):
+        # 学習データ作成
         batch = standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE, TARGET_FEATURE)
-        summary, _ = sess.run([merged_log, optimizer], feed_dict={x: batch[0], y: batch[1]})
+
+        # ログ出力
         if i % OUTPUT_BY == 0:
             # ログの出力
             mae = sess.run(loss, feed_dict={x: batch[0], y: batch[1]})
-            [acc, acc2] = sess.run([accuracy, accuracy2], feed_dict={x: test_batch[0], y: test_batch[1]})
+            [summary, acc, acc2] = sess.run([merged_log, accuracy, acc_stddev], feed_dict={x: test_batch[0], y: test_batch[1]})
             now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-            print('{:s}: step {:5d}, err {:.3f}, acc {:.3f}, acc2 {:.3f}'.format(now, i, mae, acc, acc2))
+            print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
             writer.add_summary(summary, global_step=i)
+
+        # 学習の実行
+        _ = sess.run(optimizer, feed_dict={x: batch[0], y: batch[1]})
 
     # 最終ログ
     mae = sess.run(loss, feed_dict={x: batch[0], y: batch[1]})
-    [acc, acc2] = sess.run([accuracy, accuracy2], feed_dict={x: test_batch[0], y: test_batch[1]})
+    [acc, acc2] = sess.run([accuracy, acc_stddev], feed_dict={x: test_batch[0], y: test_batch[1]})
     now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    print('{:s}: step {:5d}, err {:.3f}, acc {:.3f}, acc2 {:.3f}' .format(now, NUM_TRAIN, mae, acc, acc2))
+    print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}' .format(now, NUM_TRAIN, mae, acc, acc2))
     writer.add_summary(summary, global_step=NUM_TRAIN)
 
 # 保存
