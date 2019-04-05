@@ -74,31 +74,35 @@ def merge_companies(ccs):
         filename = 'stocks_%s_1d_*.csv' % cc
 
         ccdataset = pd.DataFrame()
-        for file in os.listdir(dirname):
-            if fnmatch.fnmatch(file, filename):
-                # print(file)
-                # csvのread
-                readdata = pd.read_csv(dirname + file)
+        if os.path.exists(dirname):
+            for file in os.listdir(dirname):
+                if fnmatch.fnmatch(file, filename):
+                    # print(file)
+                    # csvのread
+                    readdata = pd.read_csv(dirname + file)
 
-                # dateカラムを日付型のindexにする。
-                readdata['X'] = pd.to_datetime(readdata['date'], format='%Y/%m/%d %H:%M:%S')
-                readdata.set_index('X', inplace=True)
-                readdata.drop(columns=['date'], inplace=True)
+                    # dateカラムを日付型のindexにする。
+                    readdata['X'] = pd.to_datetime(readdata['date'], format='%Y/%m/%d %H:%M:%S')
+                    readdata.set_index('X', inplace=True)
+                    readdata.drop(columns=['date'], inplace=True)
 
-                # 個社特別対応
-                readdata = refine_by_company(readdata, cc)
+                    # 個社特別対応
+                    readdata = refine_by_company(readdata, cc)
 
-                # (high - open)^2のカラムの追加
-                # h_o = pd.DataFrame()
-                # h_o['highopen'] = (readdata['high'] - readdata['open'])**1
-                # readdata = pd.concat([readdata, h_o], axis=1)
+                    # (high - open)^2のカラムの追加
+                    # h_o = pd.DataFrame()
+                    # h_o['highopen'] = (readdata['high'] - readdata['open'])**1
+                    # readdata = pd.concat([readdata, h_o], axis=1)
 
-                # 複数年データの結合
-                if len(ccdataset) == 0:
-                    ccdataset = readdata
-                else:
-                    ccdataset = pd.concat([ccdataset, readdata])
+                    # 複数年データの結合
+                    if len(ccdataset) == 0:
+                        ccdataset = readdata
+                    else:
+                        ccdataset = pd.concat([ccdataset, readdata])
+        else:
+            print('{} for training and test data is not found.'.format(dirname))
 
+        ##
         ccdataset = ccdataset.sort_index()
 
         # カラム名にCCをつける
