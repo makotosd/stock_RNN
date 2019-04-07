@@ -48,7 +48,7 @@ TRAIN_DATA_LENGTH_RATE = 0.9
 # äwèKéûä‘í∑
 SERIES_LENGTH = 72
 
-dataset2 = TrainTestDataSet.TrainTestDataSet(args, train_data_length_rate=TRAIN_DATA_LENGTH_RATE,
+dataset2 = TrainTestDataSet.TrainTestDataSet(args.cc, train_data_length_rate=TRAIN_DATA_LENGTH_RATE,
                                              series_length=SERIES_LENGTH)
 print('train data {} to {}, {} data' .format(dataset2.train_dataset.series_data.index[0],
                                              dataset2.train_dataset.series_data.index[-1],
