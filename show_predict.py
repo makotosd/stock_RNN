@@ -8,6 +8,7 @@ import argparse
 import tensorflow as tf
 import Model
 import TrainTestDataSet
+import os.path
 
 #############################################################
 def predict(dataset, model):
@@ -85,9 +86,14 @@ if __name__ == "__main__":
     sess.run(tf.global_variables_initializer())
 
     # restore
-    ckpt = tf.train.get_checkpoint_state('./')
-    saver = tf.train.Saver()
-    saver.restore(sess, ckpt.model_checkpoint_path)
+    directory_model = "./model/" + args.target_feature
+    if os.path.exists(directory_model):
+        ckpt = tf.train.get_checkpoint_state(directory_model)
+        saver = tf.train.Saver()
+        saver.restore(sess, ckpt.model_checkpoint_path)
+    else:
+        print('model diretory does NOT exists.: {}'.format(directory_model))
+        exit(0)
 
     ########################################################################
     #  ó\ë™Çé¿çs

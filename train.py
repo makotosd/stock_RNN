@@ -99,7 +99,11 @@ merged_log = tf.summary.merge_all()
 # logsディレクトリに出力するライターを作成して利用
 sess = tf.InteractiveSession()
 print('session initialize')
-with tf.summary.FileWriter('logs', sess.graph) as writer:
+directory_log = 'logs/' + args.target_feature
+if os.path.exists(directory_log):
+    os.rmdir(directory_log)
+os.makedirs(directory_log)
+with tf.summary.FileWriter(directory_log, sess.graph) as writer:
     # 学習の実行
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
@@ -135,8 +139,10 @@ with tf.summary.FileWriter('logs', sess.graph) as writer:
 
 # 保存
 cwd = os.getcwd()
+directory_model = cwd + "/" + "model/" + args.target_feature
+os.makedirs(directory_model, exist_ok=True)
 if os.name == 'nt':  # for windows
-    saver.save(sess, cwd+"\\model.ckpt")  ## for windows?
+    saver.save(sess, directory_model+"\\model.ckpt")  ## for windows?
 else:
-    saver.save(sess, cwd+"/model.ckpt")  ## for linux?
+    saver.save(sess, directory_model+"/model.ckpt")  ## for linux?
 
