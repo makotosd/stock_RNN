@@ -9,6 +9,8 @@
 
 ########################################################################
 import os
+import shutil
+import pandas as pd
 import numpy as np
 import tensorflow as tf
 import argparse
@@ -101,8 +103,11 @@ sess = tf.InteractiveSession()
 print('session initialize')
 directory_log = 'logs/' + args.target_feature
 if os.path.exists(directory_log):
-    os.rmdir(directory_log)
+    shutil.rmtree(directory_log)
 os.makedirs(directory_log)
+
+output_log = pd.DataFrame()
+z_columns = ['date', 'Iteration', 'N_OF_NEURON', 'BATCH_SIZE', 'loss', 'accuracy', 'stddev']
 with tf.summary.FileWriter(directory_log, sess.graph) as writer:
     # 学習の実行
     sess.run(tf.global_variables_initializer())
@@ -124,6 +129,8 @@ with tf.summary.FileWriter(directory_log, sess.graph) as writer:
                                             feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
             now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
             print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
+            output_log = output_log.append(pd.Series([now, i, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
+                                                     name=i, index=z_columns))
             writer.add_summary(summary, global_step=i)
 
         # 学習の実行
@@ -135,9 +142,11 @@ with tf.summary.FileWriter(directory_log, sess.graph) as writer:
                            feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
     now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}' .format(now, NUM_TRAIN, mae, acc, acc2))
+    output_log = output_log.append(pd.Series([now, NUM_TRAIN, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
+                                             name=NUM_TRAIN, index=z_columns))
     writer.add_summary(summary, global_step=NUM_TRAIN)
 
-# 保存
+# モデルの保存
 cwd = os.getcwd()
 directory_model = cwd + "/" + "model/" + args.target_feature
 os.makedirs(directory_model, exist_ok=True)
@@ -146,3 +155,7 @@ if os.name == 'nt':  # for windows
 else:
     saver.save(sess, directory_model+"/model.ckpt")  ## for linux?
 
+# 学習の推移のcsv保存
+output_log = output_log[z_columns]  # 順番を定義したとおりに並び替える。
+output_log.set_index('date', inplace=True)
+output_log.to_csv(directory_model + "/" + "training.csv")

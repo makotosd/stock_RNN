@@ -68,6 +68,7 @@ def refine_by_company(dataset, cc):
 def merge_companies(ccs):
 
     dataset = pd.DataFrame()
+    ccs.append('1330') # 1330はデフォルト。
     for cc in ccs:
         # print(cc)
         dirname = "./stock_cc_year/"
