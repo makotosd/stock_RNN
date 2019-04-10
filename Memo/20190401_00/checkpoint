@@ -1,0 +1,2 @@
+model_checkpoint_path: "C:\\Users\\Makoto\\PycharmProjects\\stock_RNN\\model.ckpt"
+all_model_checkpoint_paths: "C:\\Users\\Makoto\\PycharmProjects\\stock_RNN\\model.ckpt"

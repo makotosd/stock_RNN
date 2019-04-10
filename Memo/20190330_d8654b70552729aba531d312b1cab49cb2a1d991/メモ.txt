@@ -1,0 +1,65 @@
+入力に、NYダウ、長期金利などを使用した。
+
+training時のaccuracyは87.4%
+しかし、値をexcelで確認すると97.7%と出る(下のBEFORE)、、、この差分をひも解く
+必要あり。train.pyの以下の式は、ちょっと怪しい。
+  accuracy = tf.reduce_mean(tf.map_fn(tf.abs, prediction / y))
+
+結果: predictionとyは正規化された値を使っているので、実数評価をしている
+      excelとずれていた模様。以下のように、実値に戻してあげると、
+      excelとのずれがなくなった。(AFTER)
+        train_mean_t = train_mean[TARGET_FEATURE]
+        train_std_t = train_std[TARGET_FEATURE]
+        accuracy = tf.reduce_mean(tf.div(prediction*train_std_t+train_mean_t, y*train_std_t+train_mean_t))
+
+[BEFORE]
+(tensorflow) C:\Users\Makoto\PycharmProjects\stock_RNN>python train.py --cc 1330 6702 --target_feature 6702_close
+2019/03/30 15:20:21: step     0, err 0.665, acc 0.097
+2019/03/30 15:27:45: step   500, err 0.060, acc 0.916
+2019/03/30 15:34:59: step  1000, err 0.049, acc 0.869
+2019/03/30 15:42:16: step  1500, err 0.049, acc 0.923
+2019/03/30 15:49:32: step  2000, err 0.065, acc 0.906
+2019/03/30 15:56:47: step  2500, err 0.051, acc 0.898
+2019/03/30 16:04:02: step  3000, err 0.053, acc 0.881
+2019/03/30 16:11:17: step  3500, err 0.047, acc 0.942
+2019/03/30 16:18:34: step  4000, err 0.053, acc 0.953
+2019/03/30 17:32:33: step  4500, err 0.056, acc 0.928
+2019/03/30 17:40:00: step  5000, err 0.042, acc 0.905
+2019/03/30 17:47:36: step  5500, err 0.048, acc 0.908
+2019/03/30 17:55:40: step  6000, err 0.059, acc 0.885
+2019/03/30 18:03:47: step  6500, err 0.050, acc 0.889
+2019/03/30 18:11:22: step  7000, err 0.043, acc 0.892
+2019/03/30 18:18:40: step  7500, err 0.056, acc 0.870
+2019/03/30 18:26:11: step  8000, err 0.043, acc 0.866
+2019/03/30 18:34:03: step  8500, err 0.071, acc 0.871
+2019/03/30 18:42:03: step  9000, err 0.061, acc 0.893
+2019/03/30 18:49:48: step  9500, err 0.058, acc 0.847
+2019/03/30 18:57:15: step 10000, err 0.052, acc 0.874
+
+[AFTER]
+2019/03/31 01:10:09: step     0, err 0.666, acc 0.758, acc2 0.092
+2019/03/31 01:15:26: step   500, err 0.057, acc 0.964, acc2 0.871
+2019/03/31 01:20:31: step  1000, err 0.056, acc 0.954, acc2 0.829
+2019/03/31 01:25:16: step  1500, err 0.050, acc 0.963, acc2 0.864
+2019/03/31 01:30:07: step  2000, err 0.063, acc 0.963, acc2 0.865
+2019/03/31 01:34:54: step  2500, err 0.054, acc 0.973, acc2 0.903
+2019/03/31 01:39:42: step  3000, err 0.054, acc 0.966, acc2 0.877
+2019/03/31 01:44:35: step  3500, err 0.053, acc 0.977, acc2 0.920
+2019/03/31 01:49:33: step  4000, err 0.052, acc 0.970, acc2 0.891
+2019/03/31 01:54:31: step  4500, err 0.053, acc 0.973, acc2 0.900
+2019/03/31 01:59:28: step  5000, err 0.041, acc 0.969, acc2 0.887
+2019/03/31 02:04:27: step  5500, err 0.052, acc 0.974, acc2 0.906
+2019/03/31 02:09:24: step  6000, err 0.057, acc 0.972, acc2 0.897
+2019/03/31 02:14:23: step  6500, err 0.049, acc 0.978, acc2 0.920
+2019/03/31 02:19:20: step  7000, err 0.047, acc 0.981, acc2 0.932
+2019/03/31 02:24:19: step  7500, err 0.055, acc 0.975, acc2 0.906
+2019/03/31 02:29:16: step  8000, err 0.049, acc 0.971, acc2 0.895
+2019/03/31 02:34:16: step  8500, err 0.069, acc 0.986, acc2 0.948
+2019/03/31 02:39:13: step  9000, err 0.059, acc 0.983, acc2 0.942
+2019/03/31 02:44:12: step  9500, err 0.063, acc 0.975, acc2 0.911
+2019/03/31 02:49:08: step 10000, err 0.055, acc 0.980, acc2 0.929
+
+なお、
+  batch size  = 64
+  node        = 60
+  data length = 72
