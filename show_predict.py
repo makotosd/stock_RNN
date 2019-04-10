@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
     parser.add_argument('--target_feature', help='6702_close', default='')
     parser.add_argument('--rnn', help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
+    parser.add_argument('--num_of_neuron', help='60', default='60', type=int)
 
     args = parser.parse_args()  # 引数の解析を実行
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     # 特徴量数
     FEATURE_COUNT = dataset.feature_count
     # ニューロン数
-    NUM_OF_NEURON = 60
+    NUM_OF_NEURON = args.num_of_neuron
     # 最適化対象パラメータ
     TARGET_FEATURE = args.target_feature
     TARGET_FEATURE_COUNT = 1

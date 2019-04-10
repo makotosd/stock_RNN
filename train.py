@@ -21,7 +21,8 @@ import TrainTestDataSet
 ##########################################################################
 # train
 ##########################################################################
-def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell'):
+def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
+          num_of_neuron=60, batch_size=32, num_train=2000):
     #############################################################
     # 学習データ、テストデータの読み込み、加工などの準備
     #############################################################
@@ -45,7 +46,7 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell'):
     # 特徴量数
     FEATURE_COUNT = dataset2.feature_count
     # ニューロン数
-    NUM_OF_NEURON = 60
+    NUM_OF_NEURON = num_of_neuron
     # 最適化対象パラメータ
     TARGET_FEATURE = target_feature
     TARGET_FEATURE_COUNT = 1
@@ -61,10 +62,10 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell'):
     # 学習の実行
     #######################################################################
     # バッチサイズ
-    BATCH_SIZE = 16  # 64
+    BATCH_SIZE = batch_size  # 64
 
     # 学習回数
-    NUM_TRAIN = 200  # 10000
+    NUM_TRAIN = num_train  # 10000
 
     # 学習中の出力頻度
     OUTPUT_BY = 50  # 500
@@ -159,6 +160,9 @@ if __name__ == "__main__":
     # parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
     parser.add_argument('--target_feature', help='6702_close', default='')
     parser.add_argument('--rnn', help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
+    parser.add_argument('--num_of_neuron', help='60', default='60', type=int)
+    parser.add_argument('--batch_size', help='60', default='32', type=int)
+    parser.add_argument('--num_train', help='2000', default='2000', type=int)
 
     args = parser.parse_args()  # 引数の解析を実行
 
@@ -170,5 +174,6 @@ if __name__ == "__main__":
     # 乱数シードの初期化（数値は何でもよい）
     np.random.seed(12345)
 
-    train(cc=args.cc, target_feature=args.target_feature, rnn=args.rnn)
+    train(cc=args.cc, target_feature=args.target_feature, rnn=args.rnn,
+          batch_size=args.batch_size, num_of_neuron=args.num_of_neuron, num_train=args.num_train)
 
