@@ -126,3 +126,13 @@ if __name__ == "__main__":
         )
         plot_data['layout']['paper_bgcolor'] = '#FFFFFF'
         plot_data.iplot()
+
+    for feature in correct_data.columns:
+        plot_data = pd.DataFrame({
+            'correct': correct_data[feature],
+        }).iplot(
+          asFigure = True,
+          title = feature
+        )
+        plot_data['layout']['paper_bgcolor'] = '#FFFFFF'
+        plot_data.iplot()

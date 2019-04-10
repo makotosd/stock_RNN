@@ -59,9 +59,14 @@ def refine_by_company(dataset, cc):
     ret = dataset
     if cc =='6701':   ## NECは2017-09-27に株価が統合(10倍)された。
         retA = dataset[dataset.index < '2017-09-27'] * 10  # '2017-09-27'以前は、価格を10倍
-        retA['volume'] = dataset['volume']                 # でも、volumeは元のまま
         retB = dataset[dataset.index >= '2017-09-27']
         ret = pd.concat([retA, retB])
+        ret['volume'] = dataset['volume']                 # でも、volumeは元のまま
+    elif cc == '6703': ## OKIは2016-10-01に株式統合(10倍)
+        retA = dataset[dataset.index < '2016-09-28'] * 10  # '2017-09-27'以前は、価格を10倍
+        retB = dataset[dataset.index >= '2016-09-28']
+        ret = pd.concat([retA, retB])
+        ret['volume'] = dataset['volume']                 # でも、volumeは元のまま
 
     return ret
 
@@ -69,6 +74,8 @@ def merge_companies(ccs):
 
     dataset = pd.DataFrame()
     ccs.append('1330') # 1330はデフォルト。
+
+    # TODO: ccsの長さ分だけdirectoryをサーチしており、無駄が多い。予め検索リストを作っておき、directoryサーチは一度で済ませるべき。
     for cc in ccs:
         # print(cc)
         dirname = "./stock_cc_year/"
