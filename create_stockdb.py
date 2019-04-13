@@ -23,7 +23,9 @@ def create_mysqldb():
         exit(-1)
 
     for file in os.listdir(dirname):
-        print(file)
+        print("########")
+        print("## ", file)
+        print("########")
         cc, year, data = read_stock_csv(csv_file=dirname+file)
 
         table_name = 'stocktable_%s' % (cc)
