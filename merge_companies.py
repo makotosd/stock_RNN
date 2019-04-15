@@ -8,10 +8,13 @@ import os
 import fnmatch
 import pandas as pd
 import datetime as dt
+from urllib.parse import urlparse
+import mysql.connector
+import pandas.io.sql as psql
 
 ## ドルとユーロを読む
 def read_quate():
-    dirname = "./stock_cc_year/"
+    dirname = "./stock_misc/"
     filename = 'quote.csv'
 
     quote = pd.read_csv(dirname + filename)
@@ -23,7 +26,7 @@ def read_quate():
 
 ## 長期金利を読む
 def read_kinri():
-    dirname = "./stock_cc_year/"
+    dirname = "./stock_misc/"
     filename = 'jgbcm_all_seireki.csv'
 
     quote = pd.read_csv(dirname + filename)
@@ -35,7 +38,7 @@ def read_kinri():
 
 # NYダウ
 def read_dji(dates):
-    dirname = "./stock_cc_year/"
+    dirname = "./stock_misc/"
     filename = 'DJI.csv'
 
     dji = pd.read_csv(dirname + filename)
@@ -69,6 +72,52 @@ def refine_by_company(dataset, cc):
         ret['volume'] = dataset['volume']                 # でも、volumeは元のまま
 
     return ret
+
+def merge_companies_mysql(ccs):
+
+    dataset = pd.DataFrame()
+    ccs.append('1330') # 1330はデフォルト。
+
+    dataset = pd.DataFrame()
+    for cc in ccs:
+        url = urlparse('mysql://root@192.168.1.11:3306/stockdb')
+        conn = mysql.connector.connect(
+            host=url.hostname,
+            port=url.port,
+            user=url.username,
+            database=url.path[1:],
+        )
+        table_name = 'stocktable_' + cc
+        read_sql = """SELECT * FROM %s ORDER BY date;""" % (table_name)
+        ccdataset = psql.read_sql(read_sql, conn)
+        ccdataset.set_index('date', drop=True, inplace=True)
+
+        # カラム名にCCをつける
+        for i in ccdataset.columns:
+            ccdataset.rename(columns={i: cc + "_" + i}, inplace=True)
+
+        # 複数企業データの結合
+        if len(dataset) == 0:
+            dataset = ccdataset
+        else:
+            dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
+
+    # ドルとユーロの結合
+    # TODO: sqlに対応させる。
+    quote = read_quate()
+    dataset = pd.concat([dataset, quote], axis=1, join='inner')
+
+    # 長期金利の結合
+    # TODO: sqlに対応させる。
+    kinri = read_kinri()
+    dataset = pd.concat([dataset, kinri], axis=1, join='inner')
+
+    # NYダウ
+    # TODO: sqlに対応させる。
+    dji = read_dji(dataset.index)
+    dataset = pd.concat([dataset, dji], axis=1, join='inner')
+
+    return dataset
 
 def merge_companies(ccs):
 
@@ -137,8 +186,7 @@ def merge_companies(ccs):
 
     return dataset
 
-
 if __name__ == "__main__":
     ccs = sys.argv
     ccs.pop(0)  # 先頭(script名)を削除
-    merge_companies(ccs)
+    print(merge_companies_mysql(ccs))
