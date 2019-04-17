@@ -9,7 +9,7 @@ class TrainTestDataSet():
         TRAIN_DATA_LENGTH_RATE = train_data_length_rate
         SERIES_LENGTH = series_length
 
-        stock_merged_cc = merge_companies.merge_companies(cc)
+        stock_merged_cc = merge_companies.merge_companies_mysql(cc)
         dataset = TimeSeriesDataSet.TimeSeriesDataSet(stock_merged_cc)
         self.feature_count = dataset.feature_count
         self.train_dataset, self.test_dataset = dataset.divide_dataset(rate=TRAIN_DATA_LENGTH_RATE,

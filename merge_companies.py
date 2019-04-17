@@ -60,22 +60,36 @@ def read_dji(dates):
 # 個社特殊事情への対応
 def refine_by_company(dataset, cc):
     ret = dataset
+
     if cc =='6701':   ## NECは2017-09-27に株価が統合(10倍)された。
-        retA = dataset[dataset.index < '2017-09-27'] * 10  # '2017-09-27'以前は、価格を10倍
-        retB = dataset[dataset.index >= '2017-09-27']
-        ret = pd.concat([retA, retB])
-        ret['volume'] = dataset['volume']                 # でも、volumeは元のまま
+        column_price = ['open', 'close', 'high', 'low']
+        column_volume = ['volume']
+        date_refine = '2017-09-26'
+
+        retAp = dataset.loc[:date_refine, column_price] * 10  # '2017-09-27'以前は、価格を10倍
+        retAv = dataset.loc[:date_refine, column_volume] / 10
+        retA = pd.concat([retAp, retAv], axis=1)
+
+        retB = dataset[dataset.index > date_refine]
+
+        ret = pd.concat([retA, retB], sort=False)  # 非結合軸(colmum)は別途ソートするので、ここではFalse
     elif cc == '6703': ## OKIは2016-10-01に株式統合(10倍)
-        retA = dataset[dataset.index < '2016-09-28'] * 10  # '2017-09-27'以前は、価格を10倍
-        retB = dataset[dataset.index >= '2016-09-28']
-        ret = pd.concat([retA, retB])
-        ret['volume'] = dataset['volume']                 # でも、volumeは元のまま
+        column_price = ['open', 'close', 'high', 'low']
+        column_volume = ['volume']
+        date_refine = '2016-09-27'
+
+        retAp = dataset.loc[:date_refine, column_price] * 10  # '2016-09-27'以前は、価格を10倍
+        retAv = dataset.loc[:date_refine, column_volume] / 10
+        retA = pd.concat([retAp, retAv], axis=1)
+
+        retB = dataset[dataset.index > date_refine]
+
+        ret = pd.concat([retA, retB], sort=False)  # 非結合軸(colmum)は別途ソートするので、ここではFalse
 
     return ret
 
 def merge_companies_mysql(ccs):
 
-    dataset = pd.DataFrame()
     ccs.append('1330') # 1330はデフォルト。
 
     dataset = pd.DataFrame()
@@ -90,7 +104,13 @@ def merge_companies_mysql(ccs):
         table_name = 'stocktable_' + cc
         read_sql = """SELECT * FROM %s ORDER BY date;""" % (table_name)
         ccdataset = psql.read_sql(read_sql, conn)
-        ccdataset.set_index('date', drop=True, inplace=True)
+
+        ccdataset.set_index(pd.to_datetime(ccdataset['date'], format='%Y/%m/%d %H:%M:%S'),
+                            inplace=True)
+        ccdataset.drop('date', axis=1, inplace=True)
+
+        # 個社特別対応
+        ccdataset = refine_by_company(ccdataset, cc)
 
         # カラム名にCCをつける
         for i in ccdataset.columns:
@@ -100,6 +120,8 @@ def merge_companies_mysql(ccs):
         if len(dataset) == 0:
             dataset = ccdataset
         else:
+            hoge0 = ccdataset[ccdataset.duplicated()]
+            hoge1 = dataset[dataset.duplicated()]
             dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
 
     # ドルとユーロの結合
@@ -116,6 +138,9 @@ def merge_companies_mysql(ccs):
     # TODO: sqlに対応させる。
     dji = read_dji(dataset.index)
     dataset = pd.concat([dataset, dji], axis=1, join='inner')
+
+    # column名でソート。ここまでの結合などで入れ替わっている可能性を排除するため。
+    dataset.sort_index(axis=1, inplace=True)
 
     return dataset
 
