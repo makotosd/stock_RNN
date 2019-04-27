@@ -94,12 +94,13 @@ def merge_companies_mysql(ccs):
 
     dataset = pd.DataFrame()
     for cc in ccs:
-        url = urlparse('mysql://root@192.168.1.11:3306/stockdb')
+        url = urlparse('mysql://stockdb:bdkcots@192.168.1.11:3306/stockdb')
         conn = mysql.connector.connect(
             host=url.hostname,
             port=url.port,
             user=url.username,
             database=url.path[1:],
+            password = url.password
         )
         table_name = 'stocktable_' + cc
         read_sql = """SELECT * FROM %s ORDER BY date;""" % (table_name)
