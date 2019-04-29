@@ -48,13 +48,17 @@ def read_dji(dates):
     ret = pd.DataFrame()
     for date_j in dates:
         date_ny = date_j - dt.timedelta(days=1)  # 時差があるので、一日前のデータになる。
-        a = dji[dji.index < date_ny].tail(1)     # 一日前以前で一番新しいデータの
-        a.index = [date_j]                       # 日付を日本時間にする。
+        a = dji[date_ny: date_ny]                # djiにデータが見つかるまで、
+        while a.empty:                           # 一日ずつ遡っていく。
+            date_ny = date_ny - dt.timedelta(days=1)
+            a = dji[date_ny: date_ny]
+        a.index = [date_j]
         ret = ret.append(a)
 
     for colname in ret.columns:
         ret.rename(columns={colname: "dji_" + colname}, inplace=True)
 
+    ret.to_csv('__dji.csv')
     return ret
 
 # 個社特殊事情への対応
