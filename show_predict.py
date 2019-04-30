@@ -11,16 +11,16 @@ import TrainTestDataSet
 import os.path
 
 #############################################################
-def predict(dataset, model):
+def predict(session, dataset, model):
 
-    predict_dataset = pd.DataFrame([], columns=[TARGET_FEATURE])
-    for idx in range(len(dataset.test_dataset) - SERIES_LENGTH):
-        predict_time = dataset.test_dataset.series_data.index[idx + SERIES_LENGTH]
-        input_dataset = dataset.test_dataset[idx : idx + SERIES_LENGTH].standardize(mean=dataset.train_mean,
+    predict_dataset = pd.DataFrame([], columns=[model.TARGET_FEATURE])
+    for idx in range(len(dataset.test_dataset) - model.SERIES_LENGTH):
+        predict_time = dataset.test_dataset.series_data.index[idx + model.SERIES_LENGTH]
+        input_dataset = dataset.test_dataset[idx : idx + model.SERIES_LENGTH].standardize(mean=dataset.train_mean,
                                                                                     std=dataset.train_std)
-        predict_data_std = model.prediction.eval({model.x: input_dataset.as_array()}, session=sess)
-        predict_df_std = pd.DataFrame(predict_data_std, columns=[TARGET_FEATURE], index=[predict_time])
-        predict_df = dataset.train_mean[TARGET_FEATURE] + dataset.train_std[TARGET_FEATURE] * predict_df_std
+        predict_data_std = model.prediction.eval({model.x: input_dataset.as_array()}, session=session)
+        predict_df_std = pd.DataFrame(predict_data_std, columns=[model.TARGET_FEATURE], index=[predict_time])
+        predict_df = dataset.train_mean[model.TARGET_FEATURE] + dataset.train_std[model.TARGET_FEATURE] * predict_df_std
         predict_dataset = predict_dataset.append(predict_df)
 
     return predict_dataset
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         #  ó\ë™Çé¿çs
         ########################################################################
         predict_dataset = pd.DataFrame()
-        predict_dataset = predict(dataset, model)
+        predict_dataset = predict(session=sess, dataset=dataset, model=model)
         simulation_result, simulation_stats, simulation_hist = simulation(dataset.test_dataset.series_data,
                                                                         predict_dataset, TARGET_FEATURE)
 

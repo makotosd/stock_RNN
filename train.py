@@ -17,6 +17,7 @@ import argparse
 from datetime import datetime
 import Model
 import TrainTestDataSet
+import show_predict
 
 ##########################################################################
 # train
@@ -108,8 +109,14 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
                 mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
                 [summary, acc, acc2] = sess.run([merged_log, model.accuracy, model.acc_stddev],
                                                 feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
+                predict_dataset = show_predict.predict(session=sess, dataset=dataset2, model=model)
+                simulation_result, simulation_stats, simulation_hist = show_predict.simulation(dataset2.test_dataset.series_data,
+                                                                                  predict_dataset, TARGET_FEATURE)
+
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
+                print(simulation_stats)
+                print(simulation_hist)
                 output_log = output_log.append(pd.Series([now, i, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
                                                          name=i, index=z_columns))
                 writer.add_summary(summary, global_step=i)
@@ -140,7 +147,6 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     output_log = output_log[z_columns]  # èáî‘ÇíËã`ÇµÇΩÇ∆Ç®ÇËÇ…ï¿Ç—ë÷Ç¶ÇÈÅB
     output_log.set_index('date', inplace=True)
     output_log.to_csv(directory_model + "/" + "training.csv")
-
 
 ##########################################################################
 # main

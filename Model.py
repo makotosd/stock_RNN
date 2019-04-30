@@ -11,11 +11,11 @@ class Model():
                  dataset, series_length=72, feature_count=10,
                  num_of_neuron=20, rnn='BasicRNNell',
                  target_feature='6702_close', target_feature_count=1):
-        SERIES_LENGTH = series_length
+        self.SERIES_LENGTH = series_length
         FEATURE_COUNT = feature_count
         TARGET_FEATURE_COUNT = target_feature_count
         NUM_OF_NEURON = num_of_neuron
-        TARGET_FEATURE = target_feature
+        self.TARGET_FEATURE = target_feature
         RNN = rnn
 
         #######################################################################
@@ -23,7 +23,7 @@ class Model():
         with tf.name_scope('input'):  # tensorboard用
             # 入力（placeholderメソッドの引数は、データ型、テンソルのサイズ）
             # 訓練データ
-            self.x = tf.placeholder(tf.float32, [None, SERIES_LENGTH, FEATURE_COUNT])
+            self.x = tf.placeholder(tf.float32, [None, self.SERIES_LENGTH, FEATURE_COUNT])
             # 教師データ
             self.y = tf.placeholder(tf.float32, [None, TARGET_FEATURE_COUNT])
 
@@ -77,8 +77,8 @@ class Model():
             self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
             # 精度評価: 誤差(%)の平均
-            train_mean_t = dataset.train_mean[TARGET_FEATURE]
-            train_std_t = dataset.train_std[TARGET_FEATURE]
+            train_mean_t = dataset.train_mean[self.TARGET_FEATURE]
+            train_std_t = dataset.train_std[self.TARGET_FEATURE]
             self.accuracy = tf.reduce_mean(tf.divide(self.prediction*train_std_t+train_mean_t,
                                                      self.y*train_std_t+train_mean_t))
 
