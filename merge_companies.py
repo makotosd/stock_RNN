@@ -58,7 +58,6 @@ def read_dji(dates):
     for colname in ret.columns:
         ret.rename(columns={colname: "dji_" + colname}, inplace=True)
 
-    ret.to_csv('__dji.csv')
     return ret
 
 # 個社特殊事情への対応
