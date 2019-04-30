@@ -26,7 +26,9 @@ def predict(dataset, model):
     return predict_dataset
 
 ###########################################################
-def simulation(correct, predict, target_company):
+def simulation(correct, predict, target_feature):
+
+    target_company = target_feature[0:4]
 
     ret_column = ['buy', 'sell', 'gain_a', 'gain_r']
     ret = pd.DataFrame(index=[], columns=ret_column)
@@ -39,11 +41,28 @@ def simulation(correct, predict, target_company):
             # ”„”ƒ¬—§
             price_close = correct.loc[index][target_company + '_close']
             gain_a = price_close - buy
-            gain_r = gain_a / buy
+            gain_r = gain_a / buy * 100
             s = pd.Series([buy, price_close, gain_a, gain_r], index=ret_column)
-            ret.loc[index] = s
+        else:
+            s = pd.Series()
 
-    return ret
+        ret.loc[index] = s
+
+    count_all = len(ret)                     # a. ‘S‘Ì
+    count_buy = ret['buy'].count()           # b. ”„”ƒ¬—§”(•ê”)
+    mean_buy = ret['buy'].mean()             # c. w“ü•½‹Ï[‰~]
+    mean_sell = ret['sell'].mean()           # i. ”„‹p•½‹Ï[‰~]
+    mean_a = ret['gain_a'].mean()            # d. (”„‹p-w“ü)‚Ì•½‹Ï[‰~]
+    mean_buy_ratio = mean_a / mean_buy       # e. d / w“ü•½‹Ï
+    std_a  = ret['gain_a'].std()             # f. d ‚Ì•W€•Î·
+    mean_r = ret['gain_r'].mean()            # g. (”„‹p - w“ü)/w“ü‚Ì•½‹Ï[‰~]
+    std_r  = ret['gain_r'].std()             # h. (”„‹p - w“ü)/w“ü‚Ì•W€•Î·[‰~]
+    value_counts = ret['gain_a'].value_counts(bins=20, sort=False, normalize=True)
+
+    stats = pd.Series([count_all, count_buy, mean_buy, mean_sell, mean_a, mean_buy_ratio, std_a, mean_r, std_r],
+                      index=['count_all', 'count_buy', 'mean_buy', 'mean_sell', 'mean_gain', 'mean_buy_ratio', 'std_gain', 'mean_gain_r', 'std_gain_r'])
+
+    return ret, stats, value_counts
 
 ###########################################################
 #   main
@@ -94,8 +113,6 @@ if __name__ == "__main__":
         TARGET_FEATURE_COUNT = 1
         # BasicRNNCell or BasicLSTMCell
         RNN = args.rnn  # rnn[0]
-        # Company Code for Simulation
-        CC_simulation = TARGET_FEATURE[0:4]
 
         #######################################################################
         model = Model.Model(dataset=dataset, series_length=SERIES_LENGTH, feature_count=FEATURE_COUNT,
@@ -120,7 +137,8 @@ if __name__ == "__main__":
         ########################################################################
         predict_dataset = pd.DataFrame()
         predict_dataset = predict(dataset, model)
-        simulation_result = simulation(dataset.test_dataset.series_data, predict_dataset, CC_simulation)
+        simulation_result, simulation_stats, simulation_hist = simulation(dataset.test_dataset.series_data,
+                                                                        predict_dataset, TARGET_FEATURE)
 
     ########################################################################
     #  ƒOƒ‰ƒt‰»
