@@ -26,9 +26,24 @@ def predict(dataset, model):
     return predict_dataset
 
 ###########################################################
-def simulation(correct, predict):
-    # TODO: 中身を作る。
-    return pd.DataFrame()
+def simulation(correct, predict, target_company):
+
+    ret_column = ['buy', 'sell', 'gain_a', 'gain_r']
+    ret = pd.DataFrame(index=[], columns=ret_column)
+    feature_buy = target_company + '_low'
+    for index, row in predict.iterrows():
+        buy = int(row[feature_buy])
+        price_high = correct.loc[index, target_company + '_high']
+        price_low  = correct.loc[index, target_company + '_low']
+        if (price_low <= buy and price_high >= buy):
+            # 売買成立
+            price_close = correct.loc[index][target_company + '_close']
+            gain_a = price_close - buy
+            gain_r = gain_a / buy
+            s = pd.Series([buy, price_close, gain_a, gain_r], index=ret_column)
+            ret.loc[index] = s
+
+    return ret
 
 ###########################################################
 #   main
@@ -79,6 +94,8 @@ if __name__ == "__main__":
         TARGET_FEATURE_COUNT = 1
         # BasicRNNCell or BasicLSTMCell
         RNN = args.rnn  # rnn[0]
+        # Company Code for Simulation
+        CC_simulation = TARGET_FEATURE[0:4]
 
         #######################################################################
         model = Model.Model(dataset=dataset, series_length=SERIES_LENGTH, feature_count=FEATURE_COUNT,
@@ -103,7 +120,7 @@ if __name__ == "__main__":
         ########################################################################
         predict_dataset = pd.DataFrame()
         predict_dataset = predict(dataset, model)
-        simulation_result = simulation(dataset.test_dataset, predict_dataset)
+        simulation_result = simulation(dataset.test_dataset.series_data, predict_dataset, CC_simulation)
 
     ########################################################################
     #  グラフ化
