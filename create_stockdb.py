@@ -50,9 +50,13 @@ def create_mysqldb(url):
             print("###################################### catch InternalError: ", e)
         else: #　成功
             if cc not in cc_dict :
-                with engine.connect() as conn:
-                    sql = "ALTER TABLE %s ADD PRIMARY KEY(date);" % (table_name)
-                    conn.execute(sql)
+                sql = "ALTER TABLE %s ADD PRIMARY KEY(date);" % (table_name)
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(sql)
+                except sa.exc.IntegrityError as e:
+                    print("################## catch IntegrityError: ", e)
+                else:
                     cc_dict[cc] = True
 
         i = i+1
