@@ -112,7 +112,9 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
                 predict_dataset = show_predict.predict(session=sess, dataset=dataset2, model=model)
                 simulation_result, simulation_stats, simulation_hist = show_predict.simulation(dataset2.test_dataset.series_data,
                                                                                   predict_dataset, TARGET_FEATURE)
-
+                show_predict.put_simulation_result_sql(cc=cc, target_feature=target_feature,
+                                                       num_of_neuron=num_of_neuron, rnn=rnn, iter=i,
+                                                       stats=simulation_stats)
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
                 print(simulation_stats)
@@ -128,6 +130,13 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
         mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
         [acc, acc2] = sess.run([model.accuracy, model.acc_stddev],
                                feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
+        predict_dataset = show_predict.predict(session=sess, dataset=dataset2, model=model)
+        simulation_result, simulation_stats, simulation_hist = show_predict.simulation(
+            dataset2.test_dataset.series_data,
+            predict_dataset, TARGET_FEATURE)
+        show_predict.put_simulation_result_sql(cc=cc, target_feature=target_feature,
+                                               num_of_neuron=num_of_neuron, rnn=rnn, iter=NUM_TRAIN,
+                                               stats=simulation_stats)
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
         print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, NUM_TRAIN, mae, acc, acc2))
         output_log = output_log.append(pd.Series([now, NUM_TRAIN, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],

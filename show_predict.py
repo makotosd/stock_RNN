@@ -9,6 +9,11 @@ import tensorflow as tf
 import Model
 import TrainTestDataSet
 import os.path
+import datetime
+import pandas.io.sql as psql
+import mysql.connector
+from urllib.parse import urlparse
+import numpy as np
 
 #############################################################
 def predict(session, dataset, model):
@@ -28,11 +33,12 @@ def predict(session, dataset, model):
 ###########################################################
 def simulation(correct, predict, target_feature):
 
+    BIN_SIZE = 20
     target_company = target_feature[0:4]
 
     ret_column = ['buy', 'sell', 'gain_a', 'gain_r']
     ret = pd.DataFrame(index=[], columns=ret_column)
-    feature_buy = target_company + '_low'
+    feature_buy = target_feature
     for index, row in predict.iterrows():
         buy = int(row[feature_buy])
         price_high = correct.loc[index, target_company + '_high']
@@ -57,12 +63,65 @@ def simulation(correct, predict, target_feature):
     std_a  = ret['gain_a'].std()             # f. d ‚Ì•W€•Î·
     mean_r = ret['gain_r'].mean()            # g. (”„‹p - w“ü)/w“ü‚Ì•½‹Ï[‰~]
     std_r  = ret['gain_r'].std()             # h. (”„‹p - w“ü)/w“ü‚Ì•W€•Î·[‰~]
-    value_counts = ret['gain_a'].value_counts(bins=20, sort=False, normalize=True)
+    if count_buy > 0:
+        value_counts = ret['gain_a'].value_counts(bins=BIN_SIZE, sort=False, normalize=True, dropna=False)
+    else:
+        value_counts = np.array([np.nan] * BIN_SIZE)
 
     stats = pd.Series([count_all, count_buy, mean_buy, mean_sell, mean_a, mean_buy_ratio, std_a, mean_r, std_r],
                       index=['count_all', 'count_buy', 'mean_buy', 'mean_sell', 'mean_gain', 'mean_buy_ratio', 'std_gain', 'mean_gain_r', 'std_gain_r'])
 
     return ret, stats, value_counts
+
+##########################################################################
+# put Simulation Result into SQL db.
+##########################################################################
+def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, iter = -1):
+    # url = urlparse('mysql+pymysql://stockdb:bdkcots@192.168.1.11:3306/stockdb')  # for Ops
+    url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
+
+    stats['cc'] = target_feature[0:4]
+    stats['companion'] = ','.join(cc)
+    stats['num_of_neuron'] = num_of_neuron
+    stats['training_iter'] = iter
+    stats['rnn'] = rnn
+    stats['datetime'] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
+    table_name = "simulation_stats"
+
+    conn = mysql.connector.connect(
+        host = url.hostname,
+        port = url.port,
+        user = url.username,
+        database = url.path[1:],
+        password = url.password
+    )
+
+    # ‚·‚Å‚Éƒf[ƒ^‚ª‚ ‚é‚©‚Ç‚¤‚©‚ğŠm”F
+    sql = 'SELECT COUNT(*) FROM %s WHERE cc="%s" ' \
+          'AND companion="%s" ' \
+          'AND num_of_neuron=%d ' \
+          'AND training_iter=%d ' \
+          'AND rnn="%s";' % (table_name, stats['cc'], stats['companion'], stats['num_of_neuron'],
+                              stats['training_iter'], stats['rnn'])
+    result_mysql = psql.execute(sql, conn)
+
+    #
+    if result_mysql.fetchone()[0] != 0:  # ƒf[ƒ^‚ª‚ ‚éê‡‚Íˆê’Uíœ
+        sql = 'DELETE FROM %s WHERE cc="%s" AND companion="%s" AND num_of_neuron=%d AND ' \
+              'training_iter=%d AND rnn="%s";' % (table_name, stats['cc'], stats['companion'],
+                                                  stats['num_of_neuron'], stats['training_iter'], stats['rnn'])
+        psql.execute(sql, conn)
+
+    keys = ",".join(stats.index)
+    values = "%d,%d,%f,%f,%f,%f,%f,%f,%f,'%s','%s',%d,%d,'%s','%s'" % (
+        stats['count_all'], stats['count_buy'], stats['mean_buy'], stats['mean_sell'], stats['mean_gain'],
+        stats['mean_buy_ratio'], stats['std_gain'], stats['mean_gain_r'], stats['std_gain_r'], stats['cc'],
+        stats['companion'], stats['num_of_neuron'], stats['training_iter'], stats['rnn'], stats['datetime'])
+    sql = "INSERT INTO {} ({}) VALUES ({});".format(table_name, keys, values)
+    psql.execute(sql, conn)
+    conn.commit()
+    conn.close()
 
 ###########################################################
 #   main
