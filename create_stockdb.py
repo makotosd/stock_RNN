@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 # import mysql.connector
 # import pandas.io.sql as psql
 import numpy as np
+import random
 
 #url = 'mysql+pymysql://root@192.168.1.11:3306/stockdb'
 #url = 'mysql+pymysql://root:murano2002@localhost:3306/stockdb'
@@ -36,6 +37,8 @@ def create_mysqldb(url):
 
     files = os.listdir(dirname)
     #files = ['stocks_2046_1d_2015.csv']
+    files = ['stocks_1905_1d_2016.csv']
+    random.shuffle(files)
     i = 0
     cc_dict = {}
     for file in files:
@@ -46,15 +49,17 @@ def create_mysqldb(url):
         engine = sa.create_engine(url, echo=True)
         try:
             data.to_sql(table_name, engine, index=False, if_exists='append')
-        except sa.exc.InternalError as e:
+        except sa.exc.InternalError as e:   # なぞの文字コード
             print("###################################### catch InternalError: ", e)
+        except sa.exc.IntegrityError as e:  # 日付の重複
+            print("################## catch IntegrityError: ", e)
         else: #　成功
             if cc not in cc_dict :
                 sql = "ALTER TABLE %s ADD PRIMARY KEY(date);" % (table_name)
                 try:
                     with engine.connect() as conn:
                         conn.execute(sql)
-                except sa.exc.IntegrityError as e:
+                except sa.exc.IntegrityError as e:  # 日付の重複
                     print("################## catch IntegrityError: ", e)
                 else:
                     cc_dict[cc] = True
