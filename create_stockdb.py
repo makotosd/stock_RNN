@@ -36,9 +36,9 @@ def create_mysqldb(url):
         exit(-1)
 
     files = os.listdir(dirname)
-    #files = ['stocks_2046_1d_2015.csv']
-    files = ['stocks_1905_1d_2016.csv']
-    random.shuffle(files)
+    # files = ['stocks_2046_1d_2015.csv']
+    # files = ['stocks_1905_1d_2016.csv']
+    # random.shuffle(files)
     i = 0
     cc_dict = {}
     for file in files:
@@ -54,17 +54,23 @@ def create_mysqldb(url):
         except sa.exc.IntegrityError as e:  # 日付の重複
             print("################## catch IntegrityError: ", e)
         else: #　成功
-            if cc not in cc_dict :
-                sql = "ALTER TABLE %s ADD PRIMARY KEY(date);" % (table_name)
-                try:
-                    with engine.connect() as conn:
-                        conn.execute(sql)
-                except sa.exc.IntegrityError as e:  # 日付の重複
-                    print("################## catch IntegrityError: ", e)
-                else:
-                    cc_dict[cc] = True
+            cc_dict[cc] = True
 
         i = i+1
 
+    # すべてのstocktable_xxxxのdateをPRIMARY KEYにする。
+    for cc in cc_dict.keys():
+        table_name = 'stocktable_%s' % (cc)
+        sql = "ALTER TABLE %s ADD PRIMARY KEY(date);" % (table_name)
+        engine = sa.create_engine(url, echo=True)
+        try:
+            with engine.connect() as conn:
+                conn.execute(sql)
+        except sa.exc.IntegrityError as e:  # 日付の重複
+            print("################## catch IntegrityError: ", e)
+        else:
+            pass
+
 if __name__ == "__main__":
+    random.seed(777)
     create_mysqldb(url)
