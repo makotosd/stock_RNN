@@ -12,16 +12,75 @@ from datetime import datetime
 
 # task class
 class Task():
-    def __init__(self, cc, target_feature, rnn, num_of_neuron, num_train):
-        self.cc = cc
-        self.target_feature = target_feature
-        self.rnn = rnn
-        self.num_of_neuron = num_of_neuron
-        self.num_train = num_train
 
+    ############################################################
+    ############################################################
+    def __init__(self, cc=None, target_feature=None, rnn=None, num_of_neuron=None, num_train=None):
         self.table_name = 'queue_task'
-        url = urlparse('mysql://stockdb:bdkcots@192.168.1.11:3306/stockdb') # for Ops
-        # url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
+
+        if cc is None:  ############################### dbを読んで、次のTaskを定義する。
+            self.connect_mysql()
+
+            # 一行レコードを読み込む
+            keyword = 'cc, target_feature, num_of_neuron, num_train, rnn, status'
+            sql = 'SELECT %s FROM %s ' \
+                  'WHERE status="waiting" ORDER BY queued_at LIMIT 1 FOR UPDATE;' % (keyword, self.table_name)
+            result_mysql = psql.execute(sql, self.conn)
+            record = result_mysql.fetchone()
+
+            # レコードが空でなければ
+            if record is not None:
+                self.is_empty = False
+
+                # 内部変数の設定
+                [self.cc, self.target_feature, self.num_of_neuron, self.num_train, self.rnn, self.status] = record
+
+                # dbの該当レコードをrunningに更新
+                self.update_to_running()
+            else:  # レコードが空
+                self.is_empty = True
+
+        else: ###################################### dbに書き込むためのTaskを定義する。
+            self.cc = cc
+            self.target_feature = target_feature
+            self.rnn = rnn
+            self.num_of_neuron = num_of_neuron
+            self.num_train = num_train
+
+            self.connect_mysql()
+
+    # デストラクタ。dbを閉じる。
+    def __del__(self):
+        # commit and close
+        self.conn.commit()
+        self.conn.close()
+
+    # statusをrunningにUPDATEする
+    def update_to_running(self):
+        now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        where = 'cc="%s" AND target_feature="%s" AND num_of_neuron=%d AND num_train=%d AND rnn="%s" AND status="waiting"' % (
+            self.cc, self.target_feature, self.num_of_neuron, self.num_train, self.rnn
+        )
+        sql = 'UPDATE %s SET status="running", running_at="%s" WHERE %s' % (self.table_name, now, where)
+        print(sql)
+        psql.execute(sql, self.conn)
+        self.conn.commit()
+
+    # statusをfinishedにUPDATEする
+    def update_to_finished(self):
+        now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        where = 'cc="%s" AND target_feature="%s" AND num_of_neuron=%d AND num_train=%d AND rnn="%s" AND status="running"' % (
+            self.cc, self.target_feature, self.num_of_neuron, self.num_train, self.rnn
+        )
+        sql = 'UPDATE %s SET status="finished", finished_at="%s" WHERE %s' % (self.table_name, now, where)
+        print(sql)
+        psql.execute(sql, self.conn)
+        self.conn.commit()
+
+    # dbへ接続する
+    def connect_mysql(self):
+        # url = urlparse('mysql://stockdb:bdkcots@192.168.1.11:3306/stockdb') # for Ops
+        url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
 
         self.conn = mysql.connector.connect(
             host = url.hostname,
@@ -50,7 +109,7 @@ class Task():
         pass
 
     # タスクをqueueにinsertする
-    # waiting -> running -> done.
+    # waiting -> running -> finished.
     # (skip)
     def insert_to_queue(self):
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
@@ -61,11 +120,6 @@ class Task():
         sql = "INSERT INTO {} ({}) VALUES ({});".format(self.table_name, keys, values)
         psql.execute(sql, self.conn)
         self.conn.commit()
-
-
-    # close
-    def close(self):
-        self.conn.close()
 
 
     # テーブル作成(IF NOT EXISTS)
@@ -81,8 +135,8 @@ class Task():
               "rnn char(64) NOT NULL," \
               "status char(64) NOT NULL," \
               "queued_at datetime," \
-              "dequeued_at datetime," \
-              "complete_at datetime," \
+              "running_at datetime," \
+              "finished_at datetime," \
               "PRIMARY KEY(cc, target_feature, num_of_neuron, rnn)" \
               ")"
 
@@ -111,7 +165,8 @@ def queue_task(cc, target_feature, rnn, num_of_neuron, num_train):
         task.ignore()
     else:
         task.insert_to_queue()
-    task.close()
+
+    del task
 
 ############################################################
 # main
