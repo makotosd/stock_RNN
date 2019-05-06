@@ -16,6 +16,19 @@ from urllib.parse import urlparse
 import numpy as np
 
 #############################################################
+# Predict_Simulation_and_Store
+#############################################################
+def pss(sess, dataset, model, cc, target_feature, num_of_neuron, rnn, iter):
+    predict_dataset = predict(session=sess, dataset=dataset, model=model)
+    simulation_result, simulation_stats, simulation_hist = simulation(dataset.test_dataset.series_data,
+                                                                                   predict_dataset, target_feature)
+    put_simulation_result_sql(cc=cc, target_feature=target_feature,
+                                           num_of_neuron=num_of_neuron, rnn=rnn, iter=iter,
+                                           stats=simulation_stats)
+
+    return simulation_result, simulation_stats, simulation_hist
+
+#############################################################
 def predict(session, dataset, model):
 
     predict_dataset = pd.DataFrame([], columns=[model.TARGET_FEATURE])
@@ -77,10 +90,11 @@ def simulation(correct, predict, target_feature):
 # put Simulation Result into SQL db.
 ##########################################################################
 def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, iter = -1):
-    # url = urlparse('mysql+pymysql://stockdb:bdkcots@192.168.1.11:3306/stockdb')  # for Ops
-    url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
+    url = urlparse('mysql+pymysql://stockdb:bdkcots@192.168.1.11:3306/stockdb')  # for Ops
+    # url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
 
     stats['cc'] = target_feature[0:4]
+    stats['target_feature'] = target_feature
     stats['companion'] = ','.join(cc)
     stats['num_of_neuron'] = num_of_neuron
     stats['training_iter'] = iter
@@ -99,24 +113,29 @@ def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, ite
 
     # すでにデータがあるかどうかを確認
     sql = 'SELECT COUNT(*) FROM %s WHERE cc="%s" ' \
+          'AND target_feature="%s" ' \
           'AND companion="%s" ' \
           'AND num_of_neuron=%d ' \
           'AND training_iter=%d ' \
-          'AND rnn="%s";' % (table_name, stats['cc'], stats['companion'], stats['num_of_neuron'],
-                              stats['training_iter'], stats['rnn'])
+          'AND rnn="%s";' % (table_name, stats['cc'], stats['target_feature'],
+                             stats['companion'], stats['num_of_neuron'],
+                             stats['training_iter'], stats['rnn'])
     result_mysql = psql.execute(sql, conn)
 
     #
     if result_mysql.fetchone()[0] != 0:  # データがある場合は一旦削除
-        sql = 'DELETE FROM %s WHERE cc="%s" AND companion="%s" AND num_of_neuron=%d AND ' \
-              'training_iter=%d AND rnn="%s";' % (table_name, stats['cc'], stats['companion'],
+        sql = 'DELETE FROM %s WHERE cc="%s" AND target_feature="%s" AND companion="%s" AND num_of_neuron=%d AND ' \
+              'training_iter=%d AND rnn="%s";' % (table_name, stats['cc'], stats['target_feature'], stats['companion'],
                                                   stats['num_of_neuron'], stats['training_iter'], stats['rnn'])
         psql.execute(sql, conn)
 
-    keys = ",".join(stats.index)
-    values = "%d,%d,%f,%f,%f,%f,%f,%f,%f,'%s','%s',%d,%d,'%s','%s'" % (
+    # keys = ",".join(stats.index)
+    keys = ",".join(['count_all', 'count_buy', 'mean_buy', 'mean_sell', 'mean_gain',
+        'mean_buy_ratio', 'std_gain', 'mean_gain_r', 'std_gain_r', 'cc', 'target_feature',
+        'companion', 'num_of_neuron', 'training_iter', 'rnn', 'datetime'])
+    values = "%d,%d,%f,%f,%f,%f,%f,%f,%f,'%s','%s','%s',%d,%d,'%s','%s'" % (
         stats['count_all'], stats['count_buy'], stats['mean_buy'], stats['mean_sell'], stats['mean_gain'],
-        stats['mean_buy_ratio'], stats['std_gain'], stats['mean_gain_r'], stats['std_gain_r'], stats['cc'],
+        stats['mean_buy_ratio'], stats['std_gain'], stats['mean_gain_r'], stats['std_gain_r'], stats['cc'], stats['target_feature'],
         stats['companion'], stats['num_of_neuron'], stats['training_iter'], stats['rnn'], stats['datetime'])
     sql = "INSERT INTO {} ({}) VALUES ({});".format(table_name, keys, values)
     psql.execute(sql, conn)

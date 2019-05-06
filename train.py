@@ -20,6 +20,19 @@ import TrainTestDataSet
 import show_predict
 
 ##########################################################################
+# save model
+##########################################################################
+def save_model(sess, saver, n_iter, target_feature, output_log, z_columns):
+    cwd = os.getcwd()
+    directory_model = cwd + "/" + "model/" + target_feature
+    os.makedirs(directory_model, exist_ok=True)
+    saver.save(sess, directory_model + "/model.ckpt", global_step=n_iter)  ## for linux?
+
+    output_log = output_log[z_columns]  # 順番を定義したとおりに並び替える。
+    output_log.set_index('date', inplace=True)
+    output_log.to_csv(directory_model + "/" + "training.csv")
+
+##########################################################################
 # train
 ##########################################################################
 def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
@@ -93,7 +106,7 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     with tf.summary.FileWriter(directory_log, sess.graph) as writer:
         # 学習の実行
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=None)
 
         # test用データセットのバッチ実行用データの作成
         test_batch = dataset2.standardized_test_dataset.test_batch(SERIES_LENGTH, TARGET_FEATURE)
@@ -109,19 +122,18 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
                 mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
                 [summary, acc, acc2] = sess.run([merged_log, model.accuracy, model.acc_stddev],
                                                 feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
-                predict_dataset = show_predict.predict(session=sess, dataset=dataset2, model=model)
-                simulation_result, simulation_stats, simulation_hist = show_predict.simulation(dataset2.test_dataset.series_data,
-                                                                                  predict_dataset, TARGET_FEATURE)
-                show_predict.put_simulation_result_sql(cc=cc, target_feature=target_feature,
-                                                       num_of_neuron=num_of_neuron, rnn=rnn, iter=i,
-                                                       stats=simulation_stats)
+                # Predict, Simulation and Store
+                show_predict.pss(sess=sess, dataset=dataset2, model=model,
+                                 cc=cc, target_feature=target_feature, num_of_neuron=num_of_neuron,
+                                 rnn=rnn, iter=i)
+
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
-                print(simulation_stats)
-                print(simulation_hist)
                 output_log = output_log.append(pd.Series([now, i, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
                                                          name=i, index=z_columns))
                 writer.add_summary(summary, global_step=i)
+
+                save_model(sess, saver, i, target_feature, output_log, z_columns)
 
             # 学習の実行
             _ = sess.run(model.optimizer, feed_dict={model.x: batch[0], model.y: batch[1]})
@@ -130,32 +142,19 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
         mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
         [acc, acc2] = sess.run([model.accuracy, model.acc_stddev],
                                feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
-        predict_dataset = show_predict.predict(session=sess, dataset=dataset2, model=model)
-        simulation_result, simulation_stats, simulation_hist = show_predict.simulation(
-            dataset2.test_dataset.series_data,
-            predict_dataset, TARGET_FEATURE)
-        show_predict.put_simulation_result_sql(cc=cc, target_feature=target_feature,
-                                               num_of_neuron=num_of_neuron, rnn=rnn, iter=NUM_TRAIN,
-                                               stats=simulation_stats)
+        # Predict, Simulation and Store
+        show_predict.pss(sess=sess, dataset=dataset2, model=model,
+                                   cc=cc, target_feature=target_feature, num_of_neuron=num_of_neuron,
+                                   rnn=rnn, iter=NUM_TRAIN)
+
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
         print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, NUM_TRAIN, mae, acc, acc2))
         output_log = output_log.append(pd.Series([now, NUM_TRAIN, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
                                                  name=NUM_TRAIN, index=z_columns))
         writer.add_summary(summary, global_step=NUM_TRAIN)
 
-    # モデルの保存
-    cwd = os.getcwd()
-    directory_model = cwd + "/" + "model/" + target_feature
-    os.makedirs(directory_model, exist_ok=True)
-    if os.name == 'nt':  # for windows
-        saver.save(sess, directory_model + "\\model.ckpt")  ## for windows?
-    else:
-        saver.save(sess, directory_model + "/model.ckpt")  ## for linux?
-
-    # 学習の推移のcsv保存
-    output_log = output_log[z_columns]  # 順番を定義したとおりに並び替える。
-    output_log.set_index('date', inplace=True)
-    output_log.to_csv(directory_model + "/" + "training.csv")
+        # モデルの保存
+        save_model(sess, saver, NUM_TRAIN, target_feature, output_log, z_columns)
 
 ##########################################################################
 # main
