@@ -39,9 +39,9 @@ class TimeSeriesDataSet:
                 train_data = values[:-1]
                 true_value = values[-1:][target_feature]
 
-                design_matrix.append(train_data.as_matrix())
+                design_matrix.append(train_data.values)
                 # expectation.append(np.reshape(true_value.as_matrix(), [self.feature_count]))
-                expectation.append(np.reshape(true_value.as_matrix(), [target_feature_count]))
+                expectation.append(np.reshape(true_value.values, [target_feature_count]))
 
         return np.stack(design_matrix), np.stack(expectation)
 
@@ -59,8 +59,8 @@ class TimeSeriesDataSet:
                 y = self.series_data.loc[current_time:current_time, target_feature]
 
                 target_feature_count = 1
-                xs.append(x.series_data.as_matrix())
-                ys.append(np.reshape(y.as_matrix(), [target_feature_count]))
+                xs.append(x.series_data.values)
+                ys.append(np.reshape(y.values, [target_feature_count]))
 
         return np.stack(xs), np.stack(ys)
 
@@ -72,7 +72,7 @@ class TimeSeriesDataSet:
         return TimeSeriesDataSet(self.series_data.tail(n))
 
     def as_array(self):
-        return np.stack([self.series_data.as_matrix()])
+        return np.stack([self.series_data.values])
 
     def mean(self):
         return self.series_data.mean()
