@@ -39,6 +39,7 @@ class Task():
                 self.update_to_running()
             else:  # レコードが空
                 self.is_empty = True
+                self.conn.commit()
 
         else: ###################################### dbに書き込むためのTaskを定義する。
             self.cc = cc
