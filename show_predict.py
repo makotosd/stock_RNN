@@ -101,6 +101,9 @@ def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, ite
     stats['rnn'] = rnn
     stats['datetime'] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
+    # sql—p‚ÉNaN‚ğNone‚É’u‚«Š·‚¦‚éB
+    stats = stats.where((pd.notnull(stats)), None)
+
     table_name = "simulation_stats"
 
     conn = mysql.connector.connect(

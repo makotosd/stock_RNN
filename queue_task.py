@@ -80,8 +80,8 @@ class Task():
 
     # dbへ接続する
     def connect_mysql(self):
-        # url = urlparse('mysql://stockdb:bdkcots@192.168.1.11:3306/stockdb') # for Ops
-        url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
+        url = urlparse('mysql://stockdb:bdkcots@192.168.1.11:3306/stockdb') # for Ops
+        # url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
 
         self.conn = mysql.connector.connect(
             host = url.hostname,
