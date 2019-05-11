@@ -156,6 +156,9 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
         # ƒ‚ƒfƒ‹‚Ì•Û‘¶
         save_model(sess, saver, NUM_TRAIN, target_feature, output_log, z_columns)
 
+    del model
+    del dataset2
+
 ##########################################################################
 # main
 ##########################################################################

@@ -136,7 +136,7 @@ def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, ite
     keys = ",".join(['count_all', 'count_buy', 'mean_buy', 'mean_sell', 'mean_gain',
         'mean_buy_ratio', 'std_gain', 'mean_gain_r', 'std_gain_r', 'cc', 'target_feature',
         'companion', 'num_of_neuron', 'training_iter', 'rnn', 'datetime'])
-    values = "%d,%d,%f,%f,%f,%f,%f,%f,%f,'%s','%s','%s',%d,%d,'%s','%s'" % (
+    values = '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}"'.format(
         stats['count_all'], stats['count_buy'], stats['mean_buy'], stats['mean_sell'], stats['mean_gain'],
         stats['mean_buy_ratio'], stats['std_gain'], stats['mean_gain_r'], stats['std_gain_r'], stats['cc'], stats['target_feature'],
         stats['companion'], stats['num_of_neuron'], stats['training_iter'], stats['rnn'], stats['datetime'])
