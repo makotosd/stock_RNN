@@ -8,6 +8,7 @@ import pandas as pd
 from time import sleep
 import argparse
 from datetime import datetime
+import os
 
 
 # task class
@@ -17,9 +18,38 @@ class Task():
     ############################################################
     def __init__(self, cc=None, target_feature=None, rnn=None, num_of_neuron=None, num_train=None):
         self.table_name = 'queue_task'
+        Simultaneous_Num_Task = {'jetnano0': 1, 'FMVMG7XNV5': 1, }
 
         if cc is None:  ############################### dbを読んで、次のTaskを定義する。
+            hostname = '%s' % os.uname()[1]
+
             self.connect_mysql()
+
+            # 最大task数
+            if hostname in Simultaneous_Num_Task:
+                n = Simultaneous_Num_Task[hostname]
+            else:
+                n = 1
+
+            # 実行中のtaskを数える
+            sql = 'SELECT COUNT(*) FROM %s ' \
+                  'WHERE run_on="%s" ' \
+                  'AND status="%s";' % (self.table_name, hostname, "running")
+            result_mysql = psql.execute(sql, self.conn)
+
+            num_record = result_mysql.fetchone()[0]
+
+            # 実行中のtaskが多すぎた場合は、
+            if not num_record < n:
+                self.is_empty = True
+                self.conn.commit()
+                return
+
+            keyword = 'cc, target_feature, num_of_neuron, num_train, rnn, status'
+            sql = 'SELECT %s FROM %s ' \
+                  'WHERE status="waiting" ORDER BY queued_at LIMIT 1 FOR UPDATE;' % (keyword, self.table_name)
+            result_mysql = psql.execute(sql, self.conn)
+            record = result_mysql.fetchone()
 
             # 一行レコードを読み込む
             keyword = 'cc, target_feature, num_of_neuron, num_train, rnn, status'
@@ -58,11 +88,15 @@ class Task():
 
     # statusをrunningにUPDATEする
     def update_to_running(self):
+        hostname = '%s' % os.uname()[1]
+
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-        where = 'cc="%s" AND target_feature="%s" AND num_of_neuron=%d AND num_train=%d AND rnn="%s" AND status="waiting"' % (
+        where = 'cc="%s" AND target_feature="%s" AND num_of_neuron=%d AND num_train=%d AND rnn="%s" ' \
+                'AND status="waiting"' % (
             self.cc, self.target_feature, self.num_of_neuron, self.num_train, self.rnn
         )
-        sql = 'UPDATE %s SET status="running", running_at="%s" WHERE %s' % (self.table_name, now, where)
+        sql = 'UPDATE %s SET status="running", running_at="%s", run_on="%s" WHERE %s' % (self.table_name,
+                                                                                         now, hostname, where)
         print(sql)
         psql.execute(sql, self.conn)
         self.conn.commit()
