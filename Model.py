@@ -74,7 +74,8 @@ class Model():
         with tf.name_scope('optimization'):   # tensorboard用
             # 損失関数（平均絶対誤差：MAE）と最適化（Adam）
             self.loss = tf.reduce_mean(tf.square(self.y - self.prediction))
-            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+            adam = tf.train.AdamOptimizer(0.01)
+            self.optimizer = adam.minimize(self.loss)
 
             # 精度評価: 誤差(%)の平均
             train_mean_t = dataset.train_mean[self.TARGET_FEATURE]
