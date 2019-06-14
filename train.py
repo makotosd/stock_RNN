@@ -105,14 +105,26 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     z_columns = ['date', 'Iteration', 'N_OF_NEURON', 'BATCH_SIZE', 'loss', 'accuracy', 'stddev']
     with tf.summary.FileWriter(directory_log, sess.graph) as writer:
         # 学習の実行
-        sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(max_to_keep=None)
+        directory_model = "./model/" + target_feature
+
+        # もしmodelが存在していたら、読み込んで続きを学習する。
+        if os.path.exists(directory_model):
+            ckpt = tf.train.get_checkpoint_state(directory_model)
+            saver.restore(sess, ckpt.model_checkpoint_path)
+            step = int(os.path.basename(ckpt.model_checkpoint_path).split('-')[1])
+            if not step < NUM_TRAIN:
+                print("There are same feature data. exit.")
+                exit(0)
+        else:
+            sess.run(tf.initialize_all_variables())
+            step = 0
 
         # test用データセットのバッチ実行用データの作成
         test_batch = dataset2.standardized_test_dataset.test_batch(SERIES_LENGTH, TARGET_FEATURE)
 
         # バッチ学習
-        for i in range(NUM_TRAIN):
+        for i in range(step, NUM_TRAIN):
             # 学習データ作成
             batch = dataset2.standardized_train_dataset.next_batch(SERIES_LENGTH, BATCH_SIZE, TARGET_FEATURE)
 
