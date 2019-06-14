@@ -8,7 +8,7 @@ import pandas as pd
 from time import sleep
 import argparse
 from datetime import datetime
-import os
+import socket
 
 
 # task class
@@ -21,7 +21,7 @@ class Task():
         Simultaneous_Num_Task = {'jetnano0': 1, 'FMVMG7XNV5': 1, }
 
         if cc is None:  ############################### dbを読んで、次のTaskを定義する。
-            hostname = '%s' % os.uname()[1]
+            hostname = socket.gethostname()
 
             self.connect_mysql()
 
@@ -88,7 +88,7 @@ class Task():
 
     # statusをrunningにUPDATEする
     def update_to_running(self):
-        hostname = '%s' % os.uname()[1]
+        hostname = '%s' % socket.gethostname()
 
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
         where = 'cc="%s" AND target_feature="%s" AND num_of_neuron=%d AND num_train=%d AND rnn="%s" ' \
