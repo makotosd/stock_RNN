@@ -31,15 +31,16 @@ def pss(sess, dataset, model, cc, target_feature, num_of_neuron, rnn, iter):
 #############################################################
 def predict(session, dataset, model):
 
-    predict_dataset = pd.DataFrame([], columns=[model.TARGET_FEATURE])
+    predict_dataset = pd.DataFrame([], columns=model.TARGET_FEATURE)
     for idx in range(len(dataset.test_dataset) - model.SERIES_LENGTH):
         predict_time = dataset.test_dataset.series_data.index[idx + model.SERIES_LENGTH]
         input_dataset = dataset.test_dataset[idx : idx + model.SERIES_LENGTH].standardize(mean=dataset.train_mean,
                                                                                     std=dataset.train_std)
         predict_data_std = model.prediction.eval({model.x: input_dataset.as_array()}, session=session)
-        predict_df_std = pd.DataFrame(predict_data_std, columns=[model.TARGET_FEATURE], index=[predict_time])
+        predict_df_std = pd.Series(predict_data_std[0], index=model.TARGET_FEATURE)
         predict_df = dataset.train_mean[model.TARGET_FEATURE] + dataset.train_std[model.TARGET_FEATURE] * predict_df_std
-        predict_dataset = predict_dataset.append(predict_df)
+
+        predict_dataset = predict_dataset.append(pd.DataFrame([predict_df], index=[predict_time]))
 
     return predict_dataset
 
@@ -47,11 +48,11 @@ def predict(session, dataset, model):
 def simulation(correct, predict, target_feature):
 
     BIN_SIZE = 20
-    target_company = target_feature[0:4]
+    target_company = target_feature[0][0:4]
 
     ret_column = ['buy', 'sell', 'gain_a', 'gain_r']
     ret = pd.DataFrame(index=[], columns=ret_column)
-    feature_buy = target_feature
+    feature_buy = target_feature[0]
     for index, row in predict.iterrows():
         buy = int(row[feature_buy])
         price_high = correct.loc[index, target_company + '_high']
@@ -93,8 +94,8 @@ def put_simulation_result_sql(cc, target_feature, num_of_neuron, rnn, stats, ite
     url = urlparse('mysql+pymysql://stockdb:bdkcots@192.168.1.11:3306/stockdb')  # for Ops
     # url = urlparse('mysql+pymysql://stock@localhost:3306/stockdb')  # for Dev
 
-    stats['cc'] = target_feature[0:4]
-    stats['target_feature'] = target_feature
+    stats['cc'] = target_feature[0][0:4]
+    stats['target_feature'] = "X".join(target_feature)
     stats['companion'] = ','.join(cc)
     stats['num_of_neuron'] = num_of_neuron
     stats['training_iter'] = iter

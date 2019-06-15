@@ -24,7 +24,7 @@ import show_predict
 ##########################################################################
 def save_model(sess, saver, n_iter, target_feature, output_log, z_columns):
     cwd = os.getcwd()
-    directory_model = cwd + "/" + "model/" + target_feature
+    directory_model = cwd + "/" + "model/" + target_feature[0][0:4]
     os.makedirs(directory_model, exist_ok=True)
     saver.save(sess, directory_model + "/model.ckpt", global_step=n_iter)  ## for linux?
 
@@ -35,7 +35,7 @@ def save_model(sess, saver, n_iter, target_feature, output_log, z_columns):
 ##########################################################################
 # train
 ##########################################################################
-def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
+def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
           num_of_neuron=60, batch_size=32, num_train=2000):
     #############################################################
     # 学習データ、テストデータの読み込み、加工などの準備
@@ -63,7 +63,7 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     NUM_OF_NEURON = num_of_neuron
     # 最適化対象パラメータ
     TARGET_FEATURE = target_feature
-    TARGET_FEATURE_COUNT = 1
+    TARGET_FEATURE_COUNT = len(target_feature)
     # BasicRNNCell or BasicLSTMCell
     RNN = rnn  # rnn[0]
 
@@ -96,7 +96,7 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     # logsディレクトリに出力するライターを作成して利用
     sess = tf.InteractiveSession()
     print('session initialize')
-    directory_log = 'logs/' + target_feature
+    directory_log = 'logs/' + "X".join(target_feature)
     if os.path.exists(directory_log):
         shutil.rmtree(directory_log)
     os.makedirs(directory_log)
@@ -106,7 +106,7 @@ def train(cc='6702', target_feature='6702_close', rnn='BasicRNNCell',
     with tf.summary.FileWriter(directory_log, sess.graph) as writer:
         # 学習の実行
         saver = tf.train.Saver(max_to_keep=None)
-        directory_model = "./model/" + target_feature
+        directory_model = "./model/" + "X".join(target_feature)
 
         # もしmodelが存在していたら、読み込んで続きを学習する。
         if os.path.exists(directory_model):
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     # parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
     #                    default=['open', 'close', 'high', 'low', 'highopen'])
     # parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
-    parser.add_argument('--target_feature', help='6702_close', default='')
+    parser.add_argument('--target_feature', nargs='*', help='6702_close', default='[]')
     parser.add_argument('--rnn', help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
     parser.add_argument('--num_of_neuron', help='60', default='60', type=int)
     parser.add_argument('--batch_size', help='60', default='32', type=int)

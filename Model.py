@@ -10,7 +10,7 @@ class Model():
     def __init__(self,
                  dataset, series_length=72, feature_count=10,
                  num_of_neuron=20, rnn='BasicRNNell',
-                 target_feature='6702_close', target_feature_count=1):
+                 target_feature=['6702_close'], target_feature_count=1):
         self.SERIES_LENGTH = series_length
         FEATURE_COUNT = feature_count
         TARGET_FEATURE_COUNT = target_feature_count
@@ -80,10 +80,14 @@ class Model():
             # 精度評価: 誤差(%)の平均
             train_mean_t = dataset.train_mean[self.TARGET_FEATURE]
             train_std_t = dataset.train_std[self.TARGET_FEATURE]
-            self.accuracy = tf.reduce_mean(tf.divide(self.prediction*train_std_t+train_mean_t,
-                                                     self.y*train_std_t+train_mean_t))
+            #self.train_std_t_reshape = tf.reshape(_tile, [batch_size, TARGET_FEATURE_COUNT])
+            #self.train_mean_t_reshape = tf.reshape(tf.tile(train_mean_t, [batch_size]), [batch_size, TARGET_FEATURE_COUNT])
+            #self.accuracy = tf.reduce_mean(self.train_std_t_reshape)
+            #self.accuracy = tf.reduce_mean(tf.divide(self.prediction * train_std_t_reshape + train_mean_t_reshape,
+            #                                         self.y          * train_std_t_reshape + train_mean_t_reshape))
+            self.accuracy = tf.reduce_mean(tf.Variable([1.0]))
 
             # 精度評価: 誤差のばらつき(%)
             diff_mean, diff_var = tf.nn.moments(self.y - self.prediction, axes=[0])
-            # self.acc_stddev = tf.reduce_mean(tf.math.sqrt(diff_var) * train_std_t / train_mean_t)  # tf ver1.12
-            self.acc_stddev = tf.reduce_mean(tf.sqrt(diff_var) * train_std_t / train_mean_t)  # tf ver1.5
+            #self.acc_stddev = tf.reduce_mean(tf.divide(tf.multiply(tf.sqrt(diff_var), train_std_t), train_mean_t))  # tf ver1.5
+            self.acc_stddev = tf.reduce_mean(tf.Variable([1.0]))
