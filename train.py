@@ -115,7 +115,7 @@ def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
             step = int(os.path.basename(ckpt.model_checkpoint_path).split('-')[1])
             if not step < NUM_TRAIN:
                 print("There are same feature data. exit.")
-                exit(0)
+                return 0
         else:
             sess.run(tf.initialize_all_variables())
             step = 0

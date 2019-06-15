@@ -73,7 +73,7 @@ class Task():
 
         else: ###################################### dbに書き込むためのTaskを定義する。
             self.cc = cc
-            self.target_feature = target_feature
+            self.target_feature = ",".join(target_feature)
             self.rnn = rnn
             self.num_of_neuron = num_of_neuron
             self.num_train = num_train
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # parser.add_argument('--feature', nargs='*', help='[open, close, high, low, volume, highopen]',
     #                    default=['open', 'close', 'high', 'low', 'highopen'])
     # parser.add_argument('--quote', nargs='*', help='[USD, EUR]', default=[])
-    parser.add_argument('--target_feature', help='6702_close', default='')
+    parser.add_argument('--target_feature', nargs='*', help='6702_close', default='[]')
     parser.add_argument('--rnn', help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
     parser.add_argument('--num_of_neuron', help='60', default='60', type=int)
     parser.add_argument('--batch_size', help='60', default='32', type=int)
