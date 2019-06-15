@@ -30,7 +30,7 @@ class TimeSeriesDataSet:
         max_start_index = len(self) - length
         design_matrix = []
         expectation = []
-        target_feature_count = 1 # len(target_feature)
+        target_feature_count = len(target_feature)
         while len(design_matrix) < batch_size:
             start_index = np.random.choice(max_start_index)
             end_index = start_index + length + 1
@@ -58,7 +58,7 @@ class TimeSeriesDataSet:
                 x = older_data.tail(length)
                 y = self.series_data.loc[current_time:current_time, target_feature]
 
-                target_feature_count = 1
+                target_feature_count = len(target_feature)
                 xs.append(x.series_data.values)
                 ys.append(np.reshape(y.values, [target_feature_count]))
 
