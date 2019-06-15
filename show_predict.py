@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     # オプション群の設定
     parser.add_argument('--cc', nargs='*', help='company code')
-    parser.add_argument('--target_feature', help='6702_close', default='')
+    parser.add_argument('--target_feature', nargs='*', help='6702_close', default='[]')
     parser.add_argument('--rnn', help='[BasicLSTMCell|BasicRNNCell]', default='BasicRNNCell')
     parser.add_argument('--num_of_neuron', help='60', default='60', type=int)
     parser.add_argument('--show_input', action='store_true', default=False)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         NUM_OF_NEURON = args.num_of_neuron
         # 最適化対象パラメータ
         TARGET_FEATURE = args.target_feature
-        TARGET_FEATURE_COUNT = 1
+        TARGET_FEATURE_COUNT = len(TARGET_FEATURE)
         # BasicRNNCell or BasicLSTMCell
         RNN = args.rnn  # rnn[0]
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
 
         # restore
-        directory_model = "./model/" + args.target_feature
+        directory_model = "./model/" + "X".join(args.target_feature)
         if os.path.exists(directory_model):
             ckpt = tf.train.get_checkpoint_state(directory_model)
             saver = tf.train.Saver()

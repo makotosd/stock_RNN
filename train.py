@@ -24,7 +24,7 @@ import show_predict
 ##########################################################################
 def save_model(sess, saver, n_iter, target_feature, output_log, z_columns):
     cwd = os.getcwd()
-    directory_model = cwd + "/" + "model/" + target_feature[0][0:4]
+    directory_model = cwd + "/" + "model/" + "X".join(target_feature)
     os.makedirs(directory_model, exist_ok=True)
     saver.save(sess, directory_model + "/model.ckpt", global_step=n_iter)  ## for linux?
 
