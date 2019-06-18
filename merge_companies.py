@@ -113,6 +113,12 @@ def merge_companies_mysql(ccs):
                             inplace=True)
         ccdataset.drop('date', axis=1, inplace=True)
 
+        # open を1日分ずらす
+        open_df = ccdataset['open']
+        ccdataset.drop('open', axis=1, inplace=True)
+        ccdataset = pd.concat([open_df.shift(-1), ccdataset], axis=1, sort=False, join='inner')
+        ccdataset = ccdataset[:-1]
+
         # 個社特別対応
         ccdataset = refine_by_company(ccdataset, cc)
 
@@ -124,8 +130,6 @@ def merge_companies_mysql(ccs):
         if len(dataset) == 0:
             dataset = ccdataset
         else:
-            hoge0 = ccdataset[ccdataset.duplicated()]
-            hoge1 = dataset[dataset.duplicated()]
             dataset = pd.concat([dataset, ccdataset], axis=1, sort=False, join='inner')
 
     # ドルとユーロの結合
