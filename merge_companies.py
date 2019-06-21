@@ -116,11 +116,14 @@ def merge_companies_mysql(ccs):
         # 個社特別対応
         ccdataset = refine_by_company(ccdataset, cc)
 
-        # open を1日分ずらす
-        open_df = ccdataset['open']
-        ccdataset.drop('open', axis=1, inplace=True)
-        ccdataset = pd.concat([open_df.shift(-1), ccdataset], axis=1, sort=False, join='inner')
-        ccdataset = ccdataset[:-1]
+        ## open を1日分ずらす
+        #open_df = ccdataset['open']
+        #ccdataset.drop('open', axis=1, inplace=True)
+        #ccdataset = pd.concat([open_df.shift(-1), ccdataset], axis=1, sort=False, join='inner')
+        #ccdataset = ccdataset[:-1]
+
+        # close - openの絡むを追加
+        ccdataset['diff'] = ccdataset['close'] - ccdataset['open']
 
         # カラム名にCCをつける
         for i in ccdataset.columns:
