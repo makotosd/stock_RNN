@@ -131,8 +131,8 @@ def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
             # ログ出力
             if i % OUTPUT_BY == 0:
                 # ログの出力
-                mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
-                [summary, acc, acc2] = sess.run([merged_log, model.accuracy, model.acc_stddev],
+                loss_train = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
+                [summary, loss_test, acc2] = sess.run([merged_log, model.loss, model.acc_stddev],
                                                 feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
                 # Predict, Simulation and Store
                 show_predict.pss(sess=sess, dataset=dataset2, model=model,
@@ -140,8 +140,8 @@ def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
                                  rnn=rnn, iter=i)
 
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-                print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, i, mae, acc, acc2))
-                output_log = output_log.append(pd.Series([now, i, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
+                print('{:s}: step {:5d}, loss_train {:.3f}, loss_test {:.3f}, std {:.3f}'.format(now, i, loss_train, loss_test, acc2))
+                output_log = output_log.append(pd.Series([now, i, NUM_OF_NEURON, BATCH_SIZE, loss_train, loss_test, acc2],
                                                          name=i, index=z_columns))
                 writer.add_summary(summary, global_step=i)
 
@@ -151,8 +151,8 @@ def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
             _ = sess.run(model.optimizer, feed_dict={model.x: batch[0], model.y: batch[1]})
 
         # 最終ログ
-        mae = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
-        [acc, acc2] = sess.run([model.accuracy, model.acc_stddev],
+        loss_train = sess.run(model.loss, feed_dict={model.x: batch[0], model.y: batch[1]})
+        [loss_test, acc2] = sess.run([model.loss, model.acc_stddev],
                                feed_dict={model.x: test_batch[0], model.y: test_batch[1]})
         # Predict, Simulation and Store
         show_predict.pss(sess=sess, dataset=dataset2, model=model,
@@ -160,8 +160,8 @@ def train(cc='6702', target_feature=['6702_close'], rnn='BasicRNNCell',
                                    rnn=rnn, iter=NUM_TRAIN)
 
         now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-        print('{:s}: step {:5d}, loss {:.3f}, acc {:.3f}, std {:.3f}'.format(now, NUM_TRAIN, mae, acc, acc2))
-        output_log = output_log.append(pd.Series([now, NUM_TRAIN, NUM_OF_NEURON, BATCH_SIZE, mae, acc, acc2],
+        print('{:s}: step {:5d}, loss_train {:.3f}, loss_test {:.3f}, std {:.3f}'.format(now, NUM_TRAIN, loss_train, loss_test, acc2))
+        output_log = output_log.append(pd.Series([now, NUM_TRAIN, NUM_OF_NEURON, BATCH_SIZE, loss_train, loss_test, acc2],
                                                  name=NUM_TRAIN, index=z_columns))
         writer.add_summary(summary, global_step=NUM_TRAIN)
 
